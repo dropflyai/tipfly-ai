@@ -1,0 +1,69 @@
+# Ignore system and temp folders
+AppData/
+.android/
+.gradle/
+.expo/
+.cache/
+.local/
+.config/
+.aws/
+.docker/
+.ssh/
+.vscode/
+.railway/
+.claude/
+.gemini/
+.n8n-mcp/
+node_modules/
+*.log
+
+# Ignore user home directory files
+Desktop/
+Documents/
+Downloads/
+Pictures/
+Videos/
+Music/
+OneDrive/
+"3D Objects"/
+Contacts/
+Favorites/
+Links/
+"Saved Games"/
+Searches/
+
+# Ignore other project folders
+content-dashboard/
+fit-app/
+hoa-management-app/
+instagram-automation/
+script-genius-ai/
+social-media-manager/
+eleven-bridge/
+gemini-cli/
+google-calendar-mcp/
+instagram-analytics-backend/
+instagram-analytics-frontend/
+my_agent_project/
+my_workflows/
+n8n-docker/
+n8n-mcp-assistant/
+adk-cloudrun/
+claude-code/
+coding-pilot-mvp/
+supabase/
+voice-bridge/
+xml-proxy/
+vapi-nail-salon-agent/
+mcp/
+
+# Ignore markdown and text files in root
+*.md
+*.txt
+
+# But include essential project files
+!README.md
+!package.json
+!tsconfig.json
+!app.json
+!eas.json

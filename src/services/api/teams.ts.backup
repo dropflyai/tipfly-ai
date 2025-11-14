@@ -1,0 +1,269 @@
+// Team/Workplace Management API
+import { supabase } from './supabase';
+import type {
+  Workplace,
+  WorkplaceMembership,
+  WorkplaceWithMembers,
+  CreateWorkplaceRequest,
+  JoinWorkplaceRequest,
+} from '../../types/teams';
+
+/**
+ * Get all workplaces the current user is a member of
+ */
+export async function getUserWorkplaces(): Promise<WorkplaceWithMembers[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('workplaces')
+    .select(`
+      *,
+      workplace_memberships!inner(user_id, role)
+    `)
+    .eq('workplace_memberships.user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  // Get member counts for each workplace
+  const workplacesWithCounts = await Promise.all(
+    (data || []).map(async (workplace: any) => {
+      const { count } = await supabase
+        .from('workplace_memberships')
+        .select('*', { count: 'exact', head: true })
+        .eq('workplace_id', workplace.id);
+
+      return {
+        ...workplace,
+        member_count: count || 0,
+        user_role: workplace.workplace_memberships[0].role,
+      };
+    })
+  );
+
+  return workplacesWithCounts;
+}
+
+/**
+ * Create a new workplace/team
+ */
+export async function createWorkplace(request: CreateWorkplaceRequest): Promise<Workplace> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Generate unique invite code
+  let inviteCode = '';
+  let codeExists = true;
+  let attempts = 0;
+
+  while (codeExists && attempts < 10) {
+    inviteCode = generateInviteCode();
+    const { data } = await supabase
+      .from('workplaces')
+      .select('id')
+      .eq('invite_code', inviteCode)
+      .single();
+
+    codeExists = !!data;
+    attempts++;
+  }
+
+  if (codeExists) {
+    throw new Error('Failed to generate unique invite code');
+  }
+
+  // Create workplace
+  const { data: workplace, error: workplaceError } = await supabase
+    .from('workplaces')
+    .insert({
+      name: request.name.trim(),
+      invite_code: inviteCode,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (workplaceError) throw workplaceError;
+
+  // Auto-join creator as owner
+  const { error: membershipError } = await supabase
+    .from('workplace_memberships')
+    .insert({
+      workplace_id: workplace.id,
+      user_id: user.id,
+      role: 'owner',
+    });
+
+  if (membershipError) {
+    // Rollback workplace creation
+    await supabase.from('workplaces').delete().eq('id', workplace.id);
+    throw membershipError;
+  }
+
+  return workplace;
+}
+
+/**
+ * Join a workplace using invite code
+ */
+export async function joinWorkplace(request: JoinWorkplaceRequest): Promise<Workplace> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const inviteCode = request.invite_code.toUpperCase().trim();
+
+  // Find workplace by invite code
+  const { data: workplace, error: workplaceError } = await supabase
+    .from('workplaces')
+    .select('*')
+    .eq('invite_code', inviteCode)
+    .single();
+
+  if (workplaceError || !workplace) {
+    throw new Error('Invalid invite code');
+  }
+
+  // Check if already a member
+  const { data: existingMembership } = await supabase
+    .from('workplace_memberships')
+    .select('id')
+    .eq('workplace_id', workplace.id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (existingMembership) {
+    throw new Error('You are already a member of this team');
+  }
+
+  // Join as member
+  const { error: membershipError } = await supabase
+    .from('workplace_memberships')
+    .insert({
+      workplace_id: workplace.id,
+      user_id: user.id,
+      role: 'member',
+    });
+
+  if (membershipError) throw membershipError;
+
+  return workplace;
+}
+
+/**
+ * Leave a workplace
+ */
+export async function leaveWorkplace(workplaceId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Check if user is the owner
+  const { data: membership } = await supabase
+    .from('workplace_memberships')
+    .select('role')
+    .eq('workplace_id', workplaceId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (membership?.role === 'owner') {
+    // Check if there are other members
+    const { count } = await supabase
+      .from('workplace_memberships')
+      .select('*', { count: 'exact', head: true })
+      .eq('workplace_id', workplaceId);
+
+    if (count && count > 1) {
+      throw new Error('Transfer ownership before leaving. You are the only owner.');
+    }
+
+    // Delete workplace if owner and no other members
+    const { error: deleteError } = await supabase
+      .from('workplaces')
+      .delete()
+      .eq('id', workplaceId);
+
+    if (deleteError) throw deleteError;
+  } else {
+    // Regular member leaving
+    const { error } = await supabase
+      .from('workplace_memberships')
+      .delete()
+      .eq('workplace_id', workplaceId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  }
+}
+
+/**
+ * Get members of a workplace
+ */
+export async function getWorkplaceMembers(workplaceId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('workplace_memberships')
+    .select(`
+      id,
+      role,
+      joined_at,
+      user_id
+    `)
+    .eq('workplace_id', workplaceId)
+    .order('joined_at', { ascending: true });
+
+  if (error) throw error;
+
+  // Get user details for each member
+  const membersWithDetails = await Promise.all(
+    (data || []).map(async (membership: any) => {
+      // In a real app, you'd fetch user profile data
+      // For now, we'll just return the membership data
+      return {
+        ...membership,
+        name: 'Team Member', // Placeholder
+        email: '', // Placeholder
+      };
+    })
+  );
+
+  return membersWithDetails;
+}
+
+/**
+ * Update workplace name
+ */
+export async function updateWorkplaceName(workplaceId: string, name: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Verify user is owner
+  const { data: membership } = await supabase
+    .from('workplace_memberships')
+    .select('role')
+    .eq('workplace_id', workplaceId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (membership?.role !== 'owner') {
+    throw new Error('Only the owner can update workplace details');
+  }
+
+  const { error } = await supabase
+    .from('workplaces')
+    .update({ name: name.trim() })
+    .eq('id', workplaceId);
+
+  if (error) throw error;
+}
+
+/**
+ * Generate a random 6-character invite code
+ * Format: ABCDEF (uppercase letters and numbers, excluding confusing chars)
+ */
+function generateInviteCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude 0,O,1,I
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
