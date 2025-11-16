@@ -16,7 +16,8 @@
       "bundleIdentifier": "com.tipflyai.app",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan receipts for automatic tip entry.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and upload receipt images."
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and upload receipt images.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
