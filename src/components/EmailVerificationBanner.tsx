@@ -18,28 +18,52 @@ export default function EmailVerificationBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   // Don't show banner if email is already verified or user dismissed it
-  if (!user || user.email_confirmed_at || dismissed) {
+  if (!user || user.email_confirmed_at || user.user_metadata?.email_verified || dismissed) {
     return null;
   }
 
   const handleResendEmail = async () => {
-    if (!user.email) return;
+    if (!user.email) {
+      Alert.alert('Error', 'No email address found');
+      return;
+    }
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email,
-      });
+      console.log('[EmailVerificationBanner] Attempting to resend verification email to:', user.email);
 
-      if (error) throw error;
+      // Call Edge Function to send verification email via Resend
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'send-verification-email',
+        {
+          body: {
+            email: user.email,
+            userId: user.id,
+          },
+        }
+      );
+
+      console.log('[EmailVerificationBanner] Edge Function response:', { functionData, functionError });
+
+      if (functionError) {
+        console.error('[EmailVerificationBanner] Edge Function error:', functionError);
+        throw functionError;
+      }
+
+      if (functionData?.error) {
+        throw new Error(functionData.error);
+      }
 
       Alert.alert(
         'Email Sent',
         'Verification email has been sent. Please check your inbox and spam folder.'
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send verification email');
+      console.error('[EmailVerificationBanner] Failed to resend email:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to send verification email. Please try again later or contact support.'
+      );
     } finally {
       setLoading(false);
     }
@@ -83,9 +107,9 @@ export default function EmailVerificationBanner() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#FFF7ED', // Warm orange tint
+    backgroundColor: Colors.warning + '20', // Dark-friendly warning tint
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: Colors.warning + '40',
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
@@ -102,12 +126,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text,
+    color: Colors.white,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 12,
     lineHeight: 20,
   },
