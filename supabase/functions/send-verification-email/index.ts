@@ -65,7 +65,7 @@ serve(async (req) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email - TipGenius</title>
+  <title>Verify Your Email - TipFly</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0A0E27; color: #FFFFFF;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0A0E27;">
@@ -87,7 +87,7 @@ serve(async (req) => {
           <tr>
             <td style="padding: 40px;">
               <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 24px; color: rgba(255,255,255,0.9);">
-                Welcome to <strong>TipGenius</strong>! We're excited to have you on board.
+                Welcome to <strong>TipFly</strong>! We're excited to have you on board.
               </p>
 
               <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 24px; color: rgba(255,255,255,0.9);">
@@ -114,7 +114,7 @@ serve(async (req) => {
 
               <div style="padding: 20px; background-color: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366F1; border-radius: 8px; margin-bottom: 32px;">
                 <p style="margin: 0; font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.8);">
-                  <strong>🔒 Security tip:</strong> This link will expire in 24 hours. If you didn't create a TipGenius account, you can safely ignore this email.
+                  <strong>🔒 Security tip:</strong> This link will expire in 24 hours. If you didn't create a TipFly account, you can safely ignore this email.
                 </p>
               </div>
 
@@ -134,10 +134,10 @@ serve(async (req) => {
                 Need help?
               </p>
               <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 20px; color: rgba(255,255,255,0.7);">
-                Visit our support center or contact us at support@tipgenius.app
+                Visit our support center or contact us at support@tipfly.app
               </p>
               <p style="margin: 0; font-size: 12px; color: rgba(255,255,255,0.5);">
-                © ${new Date().getFullYear()} TipGenius. All rights reserved.<br>
+                © ${new Date().getFullYear()} TipFly. All rights reserved.<br>
                 Track smarter, earn better.
               </p>
             </td>
@@ -151,7 +151,7 @@ serve(async (req) => {
     `.trim();
 
     const emailText = `
-Welcome to TipGenius!
+Welcome to TipFly!
 
 Please verify your email address to unlock all features.
 
@@ -160,11 +160,11 @@ ${verificationLink}
 
 This link will expire in 24 hours.
 
-If you didn't create a TipGenius account, you can safely ignore this email.
+If you didn't create a TipFly account, you can safely ignore this email.
 
-Need help? Contact us at support@tipgenius.app
+Need help? Contact us at support@tipfly.app
 
-© ${new Date().getFullYear()} TipGenius. All rights reserved.
+© ${new Date().getFullYear()} TipFly. All rights reserved.
 Track smarter, earn better.
     `.trim();
 
@@ -175,9 +175,9 @@ Track smarter, earn better.
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'TipGenius <noreply@codeflyai.com>',
+        from: 'TipFly <noreply@codeflyai.com>',
         to: [email],
-        subject: 'Verify Your Email - TipGenius',
+        subject: 'Verify Your Email - TipFly',
         html: emailHtml,
         text: emailText,
       }),
