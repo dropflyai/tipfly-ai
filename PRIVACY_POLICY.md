@@ -1,303 +1,96 @@
-# Privacy Policy
+# Privacy Policy for TipFly AI
 
-**Effective Date:** January 1, 2025
-**Last Updated:** January 1, 2025
+**Last Updated: November 20, 2025**
 
 ## Introduction
 
-TipFly AI ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.
+DropFly AI ("we", "our", or "us") operates the TipFly AI mobile application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service.
 
-**By using TipFly AI, you agree to the collection and use of information in accordance with this policy.**
+## Information We Collect
 
-## 1. Information We Collect
-
-### 1.1 Information You Provide
-
-**Account Information:**
+### Personal Information
+When you create an account, we collect:
 - Email address
-- Full name
-- Job title/type
-- Password (encrypted)
+- Full name (optional)
+- Authentication credentials
 
-**Tip Tracking Data:**
-- Date of work shifts
-- Hours worked
-- Tips earned
-- Shift type (day, night, double, other)
-- Optional notes about shifts
-- Goals and targets you set
+### Tip Data
+We store the tip information you enter:
+- Tip amounts
+- Dates
+- Work hours (clock in/out times)
+- Team pool information
 
-**Profile Data:**
-- Profile preferences
-- App settings
-- Notification preferences
-
-### 1.2 Automatically Collected Information
-
-**Device Information:**
-- Device type and model
-- Operating system version
-- Unique device identifiers
-- Mobile network information
-
-**Usage Data:**
-- Features you use
-- Time spent in the app
-- Screens viewed
-- Actions taken
+### Automatically Collected Information
+- Device information
+- App usage analytics
 - Error logs and crash reports
 
-**Technical Data:**
-- IP address
-- Browser type
-- Time zone settings
-- App version
+## How We Use Your Information
 
-### 1.3 Information We Do NOT Collect
+We use the collected data for:
+- Providing and maintaining the Service
+- Generating AI-powered earnings predictions
+- Managing team tip pools
+- Notifying you about changes to our Service
+- Providing customer support
+- Detecting and preventing technical issues
 
-We do NOT collect:
-- Social Security Numbers
-- Bank account numbers
-- Credit card numbers (subscriptions are processed by Apple/Google)
-- Employer information
-- Exact location data
-- Biometric data
-- Contact lists
-- Photos or media (unless you explicitly share them)
+## Data Storage and Security
 
-## 2. How We Use Your Information
+- All data is encrypted in transit and at rest
+- We use Supabase for secure cloud storage
+- Your data is backed up regularly
+- We implement industry-standard security measures
 
-### 2.1 Primary Purposes
+## Data Sharing
 
-We use your information to:
-- **Provide the Service:** Enable core tip tracking functionality
-- **Manage Your Account:** Create and maintain your account
-- **Calculate Statistics:** Compute earnings, averages, and trends
-- **Send Notifications:** Alert you about goals, reminders (if enabled)
-- **Sync Across Devices:** Keep your data synchronized
-- **Improve the App:** Analyze usage patterns and fix bugs
+We do not sell, trade, or rent your personal information to third parties.
 
-### 2.2 Communication
+We may share your information only in these circumstances:
+- With your explicit consent
+- To comply with legal obligations
+- To protect our rights and safety
 
-We may use your email to:
-- Send account-related notifications
-- Provide customer support
-- Send important updates about the Service
-- Share tips and best practices (you can opt-out)
+### Third-Party Services
 
-We will NOT:
-- Spam you with marketing emails
-- Share your email with third parties for marketing
-- Sell your information to advertisers
+We use the following third-party services:
+- **Supabase**: Database and authentication
+- **Anthropic Claude**: AI predictions (tip data is anonymized)
+- **Expo**: App infrastructure and updates
 
-## 3. Data Storage and Security
-
-### 3.1 Where We Store Data
-
-- **Cloud Storage:** Your data is stored securely on Supabase (PostgreSQL database)
-- **Server Location:** United States
-- **Encryption:** Data is encrypted in transit (TLS/SSL) and at rest
-- **Backups:** Regular automated backups for data protection
-
-### 3.2 Security Measures
-
-We implement industry-standard security measures:
-- **Encryption:** AES-256 encryption for data at rest
-- **Secure Transmission:** TLS 1.3 for data in transit
-- **Authentication:** Secure password hashing (bcrypt)
-- **Access Controls:** Role-based access to data
-- **Regular Audits:** Security reviews and updates
-- **Rate Limiting:** Protection against automated attacks
-
-### 3.3 Data Retention
-
-- **Active Accounts:** Data is retained while your account is active
-- **Deleted Accounts:** Data is permanently deleted within 30 days of account deletion
-- **Backups:** Backup copies are deleted within 90 days
-- **Legal Requirements:** We may retain data longer if required by law
-
-## 4. Data Sharing and Disclosure
-
-### 4.1 We DO NOT Sell Your Data
-
-We do not sell, rent, or trade your personal information to third parties for marketing purposes.
-
-### 4.2 Service Providers
-
-We share data with trusted service providers who help us operate the App:
-
-**Infrastructure Providers:**
-- **Supabase:** Database and authentication services
-- **AWS/Vercel:** Hosting and cloud services
-
-**Analytics Providers:**
-- Crash reporting services (anonymized data)
-- Usage analytics (aggregated data)
-
-**Payment Processors:**
-- Apple App Store (for iOS subscriptions)
-- Google Play Store (for Android subscriptions)
-
-All providers are bound by strict confidentiality agreements.
-
-### 4.3 Legal Requirements
-
-We may disclose your information if required to:
-- Comply with legal obligations
-- Respond to court orders or subpoenas
-- Protect our rights and property
-- Prevent fraud or abuse
-- Protect user safety
-
-### 4.4 Business Transfers
-
-If TipFly AI is acquired or merged, your data may be transferred to the new entity. We will notify you of any such change.
-
-## 5. Your Privacy Rights
-
-### 5.1 Access and Control
+## Your Rights
 
 You have the right to:
-- **Access Your Data:** View all data we have about you
-- **Update Your Data:** Correct inaccurate information
-- **Export Your Data:** Download your data in JSON format
-- **Delete Your Account:** Permanently delete your account and data
-- **Opt-Out:** Unsubscribe from marketing emails
+- Access your personal data
+- Correct inaccurate data
+- Delete your account and data
+- Export your data
+- Opt-out of communications
 
-### 5.2 How to Exercise Your Rights
+To exercise these rights, contact us at: dropflyai@gmail.com
 
-**In-App Controls:**
-- Go to Settings > Data & Privacy
-- Use "Export My Data" to download your information
-- Use "Delete Account" to permanently delete everything
+## Data Retention
 
-**Email Requests:**
-- Contact privacy@tipgenius.com
-- We will respond within 30 days
+We retain your data for as long as your account is active. If you delete your account, we will delete your personal data within 30 days, except where we are legally required to retain it.
 
-### 5.3 California Privacy Rights (CCPA)
+## Children's Privacy
 
-California residents have additional rights:
-- Right to know what personal information is collected
-- Right to know if personal information is sold or disclosed
-- Right to opt-out of sale of personal information
-- Right to non-discrimination for exercising CCPA rights
+Our Service is not intended for anyone under the age of 13. We do not knowingly collect personal information from children under 13.
 
-**We do not sell personal information.**
+## Changes to This Privacy Policy
 
-### 5.4 European Privacy Rights (GDPR)
+We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
 
-EU residents have additional rights:
-- Right to data portability
-- Right to restriction of processing
-- Right to object to processing
-- Right to lodge a complaint with supervisory authority
+## Contact Us
 
-## 6. Children's Privacy
+If you have any questions about this Privacy Policy, please contact us:
 
-TipFly AI is not intended for children under 16. We do not knowingly collect information from children under 16. If we discover we have collected information from a child under 16, we will delete it immediately.
-
-If you believe we have collected information from a child, contact us at privacy@tipgenius.com.
-
-## 7. Cookies and Tracking
-
-### 7.1 What We Use
-
-- **Session Tokens:** To keep you logged in
-- **Preferences:** To remember your settings
-- **Analytics:** To understand how the App is used (anonymized)
-
-### 7.2 Third-Party Tracking
-
-We use minimal third-party tracking:
-- Crash reporting (to fix bugs)
-- Basic analytics (aggregated, non-personal data)
-
-We do NOT use:
-- Advertising cookies
-- Cross-site tracking
-- Social media pixels (Facebook, etc.)
-
-## 8. International Data Transfers
-
-If you access TipFly AI from outside the United States:
-- Your data will be transferred to and stored in the United States
-- We comply with applicable data protection laws
-- We use standard contractual clauses for international transfers
-
-## 9. Changes to This Privacy Policy
-
-We may update this Privacy Policy from time to time. We will notify you of changes by:
-- Posting the new policy in the App
-- Sending an email notification
-- Showing an in-app notice
-
-Your continued use after changes take effect constitutes acceptance.
-
-## 10. Data Breach Notification
-
-In the event of a data breach:
-- We will investigate immediately
-- Affected users will be notified within 72 hours
-- We will take steps to secure systems and prevent future breaches
-- We will report to authorities as required by law
-
-## 11. Do Not Track
-
-We do not respond to "Do Not Track" signals because the App does not track users across third-party websites.
-
-## 12. Your Consent
-
-By using TipFly AI, you consent to:
-- Collection of information as described
-- Use of information for purposes stated
-- Sharing with service providers as outlined
-- International data transfers (if applicable)
-
-## 13. Contact Us
-
-For questions about this Privacy Policy or our privacy practices:
-
-**Email:** privacy@tipgenius.com
-**Support:** support@tipgenius.com
-**Website:** https://tipgenius.com/privacy
-**Mail:** [Your Company Address]
-
-## 14. Data Protection Officer
-
-For GDPR-related inquiries, contact our Data Protection Officer:
-**Email:** dpo@tipgenius.com
+- Email: dropflyai@gmail.com
+- GitHub: https://github.com/dropflyai/tipfly-ai/issues
 
 ---
 
-## Summary (TL;DR)
+**Your Privacy Matters**
 
-**What we collect:**
-- Email, name, and tip tracking data you enter
-
-**How we use it:**
-- To provide the tip tracking service
-- To calculate your statistics
-- To improve the App
-
-**Who we share with:**
-- Service providers (Supabase, hosting)
-- NO selling to advertisers
-- Only with your consent or legal requirement
-
-**Your rights:**
-- Access, update, export, or delete your data anytime
-- Opt-out of marketing emails
-- Request data deletion
-
-**Security:**
-- Industry-standard encryption
-- Secure cloud storage
-- Regular security audits
-
-**Contact:**
-- privacy@tipgenius.com for questions
-
----
-
-**Last Updated:** January 1, 2025
+We are committed to protecting your privacy and being transparent about how we handle your data. If you have any concerns, please don't hesitate to reach out.
