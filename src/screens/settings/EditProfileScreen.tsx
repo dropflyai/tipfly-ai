@@ -1,5 +1,5 @@
 // Edit Profile Screen - Update user profile information
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useUserStore } from '../../store/userStore';
@@ -25,6 +28,75 @@ export default function EditProfileScreen() {
   const [showJobPicker, setShowJobPicker] = useState(false);
 
   const jobTypes = AppConfig.JOB_TYPES;
+
+  const handleChangePhoto = async () => {
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your photos to change your profile picture.'
+        );
+        return;
+      }
+
+      // Show action sheet on iOS, direct picker on Android
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Take Photo', 'Choose from Library'],
+            cancelButtonIndex: 0,
+          },
+          async (buttonIndex) => {
+            if (buttonIndex === 1) {
+              // Take Photo
+              const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+              if (cameraPermission.status !== 'granted') {
+                Alert.alert('Permission Required', 'Camera access is needed to take photos.');
+                return;
+              }
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
+              if (!result.canceled) {
+                Alert.alert('Photo Selected', 'Profile photo upload will be available soon!');
+              }
+            } else if (buttonIndex === 2) {
+              // Choose from Library
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
+              if (!result.canceled) {
+                Alert.alert('Photo Selected', 'Profile photo upload will be available soon!');
+              }
+            }
+          }
+        );
+      } else {
+        // Android: directly show picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+        if (!result.canceled) {
+          Alert.alert('Photo Selected', 'Profile photo upload will be available soon!');
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to select photo. Please try again.');
+    }
+  };
 
   const handleSave = async () => {
     if (!fullName.trim()) {
@@ -79,7 +151,11 @@ export default function EditProfileScreen() {
               {fullName?.charAt(0)?.toUpperCase() || user?.full_name?.charAt(0)?.toUpperCase() || '?'}
             </Text>
           </View>
-          <TouchableOpacity style={styles.changePhotoButton}>
+          <TouchableOpacity
+            style={styles.changePhotoButton}
+            onPress={handleChangePhoto}
+            activeOpacity={0.7}
+          >
             <Ionicons name="camera" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>

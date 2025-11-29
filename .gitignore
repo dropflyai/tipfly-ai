@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -48,3 +49,27 @@ AppData/
 .local/
 .config/
 nul
+
+# Temp scripts and documentation
+*.backup
+create-*.js
+test-*.js
+process-*.js
+fix-*.js
+apply-*.js
+check-*.js
+*_INSTRUCTIONS.md
+*_ANSWERS.md
+*_GUIDE.md
+*_SETUP.md
+*_FIX.md
+*_CHECKLIST.md
+*_LISTING.md
+*_DEBUG.md
+*_READY*.md
+*_COMPLETE*.md
+*_APPLIED.md
+FIXED_*.ts
+FINAL_FIXED_*.ts
+test-*.html
+app-store-screenshots/

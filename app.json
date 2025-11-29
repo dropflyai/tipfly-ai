@@ -2,18 +2,19 @@
   "expo": {
     "name": "TipFly AI",
     "slug": "tipflyai-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0F172A"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tipflyai.app",
+      "buildNumber": "5",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan receipts for automatic tip entry.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and upload receipt images.",
@@ -23,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0F172A"
       },
       "package": "com.tipflyai.app",
       "permissions": [
