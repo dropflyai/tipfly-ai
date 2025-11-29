@@ -97,7 +97,7 @@ export default function CreateTeamModal({
               style={styles.closeButton}
               disabled={loading}
             >
-              <Ionicons name="close" size={24} color={Colors.gray600} />
+              <Ionicons name="close" size={24} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -160,16 +160,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 24,
     width: '85%',
     maxWidth: 400,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -198,7 +195,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -209,7 +206,7 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     padding: 12,
     borderRadius: 10,
     marginBottom: 24,

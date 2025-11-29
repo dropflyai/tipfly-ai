@@ -38,8 +38,8 @@ export default function JoinTeamModal({
   };
 
   const handleInviteCodeChange = (text: string) => {
-    // Auto-uppercase and remove spaces
-    const cleaned = text.toUpperCase().replace(/\s/g, '');
+    // Remove spaces only - keep original case since lookup is case-insensitive
+    const cleaned = text.replace(/\s/g, '');
     setInviteCode(cleaned);
   };
 
@@ -104,7 +104,7 @@ export default function JoinTeamModal({
               style={styles.closeButton}
               disabled={loading}
             >
-              <Ionicons name="close" size={24} color={Colors.gray600} />
+              <Ionicons name="close" size={24} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -118,7 +118,7 @@ export default function JoinTeamModal({
               value={inviteCode}
               onChangeText={handleInviteCodeChange}
               autoFocus
-              autoCapitalize="characters"
+              autoCapitalize="none"
               autoCorrect={false}
               maxLength={6}
               editable={!loading}
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 24,
     width: '85%',
@@ -180,6 +180,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     borderWidth: 2,
     borderColor: Colors.primary,
     borderRadius: 12,
@@ -231,7 +233,7 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     padding: 12,
     borderRadius: 10,
     marginBottom: 24,

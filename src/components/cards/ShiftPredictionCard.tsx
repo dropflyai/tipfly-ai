@@ -137,14 +137,11 @@ function getConfidenceColor(confidence: number): string {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 20,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -246,7 +243,7 @@ const styles = StyleSheet.create({
   },
   confidenceBar: {
     height: 6,
-    backgroundColor: Colors.gray200,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -264,7 +261,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     padding: 12,
     borderRadius: 8,
   },
@@ -295,7 +292,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray200,
+    borderTopColor: Colors.border,
   },
   premiumBadgeText: {
     fontSize: 13,

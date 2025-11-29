@@ -1,12 +1,14 @@
 // Main app navigation
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AppState, AppStateStatus } from 'react-native';
 import { useUserStore } from '../store/userStore';
+import { useAppLockStore } from '../store/appLockStore';
 import { supabase } from '../services/api/supabase';
 
 // Import screens
-import JobSelectionScreen from '../screens/onboarding/JobSelectionScreen';
+import LandingScreen from '../screens/onboarding/LandingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import MainTabNavigator from './MainTabNavigator';
@@ -25,12 +27,55 @@ import TeamDetailScreen from '../screens/teams/TeamDetailScreen';
 import CreatePoolScreen from '../screens/pools/CreatePoolScreen';
 import PoolDetailScreen from '../screens/pools/PoolDetailScreen';
 import ContactSupportScreen from '../screens/settings/ContactSupportScreen';
+import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
+import LockScreen from '../components/LockScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   const { user, setUser, setLoading, hasCompletedOnboarding } = useUserStore();
   const [initializing, setInitializing] = useState(true);
+
+  // App Lock state
+  const appState = useRef(AppState.currentState);
+  const isAppLockEnabled = useAppLockStore((state) => state.isAppLockEnabled);
+  const isLocked = useAppLockStore((state) => state.isLocked);
+  const lock = useAppLockStore((state) => state.lock);
+  const setLastBackgroundTime = useAppLockStore((state) => state.setLastBackgroundTime);
+  const shouldLock = useAppLockStore((state) => state.shouldLock);
+
+  // Handle app state changes for lock screen
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App has come to foreground
+        console.log('[AppNavigator] App came to foreground');
+        if (shouldLock()) {
+          console.log('[AppNavigator] Locking app');
+          lock();
+        }
+        setLastBackgroundTime(null);
+      } else if (
+        appState.current === 'active' &&
+        nextAppState.match(/inactive|background/)
+      ) {
+        // App has gone to background
+        console.log('[AppNavigator] App went to background');
+        if (isAppLockEnabled) {
+          setLastBackgroundTime(Date.now());
+        }
+      }
+
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isAppLockEnabled, shouldLock, lock, setLastBackgroundTime]);
 
   useEffect(() => {
     // Check for existing session
@@ -106,13 +151,25 @@ export default function AppNavigator() {
     return null; // Or a loading screen
   }
 
+  // Show lock screen if enabled and locked
+  if (user && hasCompletedOnboarding && isAppLockEnabled && isLocked) {
+    return <LockScreen />;
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
-          // Auth flow
+          // Auth flow - Landing first, then direct to Signup or Login
           <>
-            <Stack.Screen name="JobSelection" component={JobSelectionScreen} />
+            <Stack.Screen name="Landing">
+              {(props) => (
+                <LandingScreen
+                  onSignUp={() => props.navigation.navigate('Signup')}
+                  onLogin={() => props.navigation.navigate('Login')}
+                />
+              )}
+            </Stack.Screen>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
           </>
@@ -235,6 +292,14 @@ export default function AppNavigator() {
               options={{
                 headerShown: false,
                 title: 'Contact Support'
+              }}
+            />
+            <Stack.Screen
+              name="PrivacySettings"
+              component={PrivacySettingsScreen}
+              options={{
+                headerShown: false,
+                title: 'Privacy Settings'
               }}
             />
           </>

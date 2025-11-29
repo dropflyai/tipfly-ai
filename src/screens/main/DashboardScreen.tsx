@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, GradientColors } from '../../constants/colors';
@@ -209,7 +209,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Animated.View
         style={{
           flex: 1,
@@ -359,7 +359,7 @@ export default function DashboardScreen() {
           )}
         </ScrollView>
       </Animated.View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -380,6 +380,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     gap: 16,
+    paddingBottom: 120,
   },
   heroCard: {
     borderRadius: 24,
@@ -438,14 +439,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 24,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   cardTitle: {
     fontSize: 16,
@@ -509,14 +507,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chartCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 20,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   chartHeader: {
     marginBottom: 16,
@@ -533,14 +528,11 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   monthCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 24,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   monthHeader: {
     flexDirection: 'row',

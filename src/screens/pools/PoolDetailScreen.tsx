@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   statusSection: {
     padding: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     marginTop: 12,
   },
   sectionTitle: {
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
   },
   finalizedSubtext: {
     fontSize: 14,
-    color: Colors.gray600,
+    color: Colors.textSecondary,
     marginTop: 4,
   },
 });

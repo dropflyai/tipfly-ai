@@ -178,7 +178,7 @@ export default function TipHistoryScreen() {
               <Ionicons
                 name="calendar"
                 size={18}
-                color={viewMode === 'calendar' ? Colors.white : Colors.gray600}
+                color={viewMode === 'calendar' ? Colors.white : Colors.textSecondary}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -189,7 +189,7 @@ export default function TipHistoryScreen() {
               <Ionicons
                 name="list"
                 size={18}
-                color={viewMode === 'list' ? Colors.white : Colors.gray600}
+                color={viewMode === 'list' ? Colors.white : Colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -274,17 +274,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderTopWidth: 0,
   },
   backButton: {
     width: 40,
@@ -308,7 +306,7 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.gray100,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 12,
     padding: 4,
   },

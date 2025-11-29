@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { PurchasesPackage } from 'react-native-purchases';
 import { Colors } from '../../constants/colors';
 import { AppConfig } from '../../constants/config';
+import { useSubscriptionStore } from '../../store/subscriptionStore';
+import { formatPrice, getMonthlyEquivalent, calculateSavings } from '../../services/purchases/revenuecat';
 
 type PricingPlan = 'monthly' | 'annual';
 
@@ -19,14 +22,142 @@ export default function UpgradeScreen() {
   const navigation = useNavigation();
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan>('annual');
 
-  const handleUpgrade = () => {
-    // TODO: Integrate with RevenueCat for in-app purchases
-    Alert.alert(
-      'Subscription Coming Soon',
-      'We\'re currently setting up secure payment processing to bring you premium features.\n\nPremium will include:\n✨ Bill Split Calculator\n✨ Tax Tracking & Reports\n✨ Goals & Savings Tracking\n✨ Advanced Analytics\n✨ Export to CSV/PDF\n✨ Unlimited History\n\nWe\'ll notify you as soon as it\'s ready!',
-      [{ text: 'OK' }]
-    );
+  const {
+    packages,
+    isLoading,
+    error,
+    loadOfferings,
+    purchase,
+    restore,
+    isPremium,
+    clearError,
+  } = useSubscriptionStore();
+
+  // Load offerings on mount
+  useEffect(() => {
+    loadOfferings();
+  }, []);
+
+  // Find monthly and annual packages
+  const monthlyPackage = packages.find(
+    (pkg) =>
+      pkg.identifier === '$rc_monthly' ||
+      pkg.product.identifier.toLowerCase().includes('monthly')
+  );
+
+  const annualPackage = packages.find(
+    (pkg) =>
+      pkg.identifier === '$rc_annual' ||
+      pkg.product.identifier.toLowerCase().includes('annual')
+  );
+
+  // Calculate savings if both packages are available
+  const savings =
+    monthlyPackage && annualPackage
+      ? calculateSavings(monthlyPackage, annualPackage)
+      : 33; // Default to 33% if packages not loaded
+
+  const handleUpgrade = async () => {
+    const selectedPackage = selectedPlan === 'monthly' ? monthlyPackage : annualPackage;
+
+    if (!selectedPackage) {
+      // Fallback if RevenueCat isn't configured yet
+      Alert.alert(
+        'Subscription Coming Soon',
+        'We\'re currently setting up secure payment processing to bring you premium features.\n\nPremium will include:\n' +
+        '\n- Bill Split Calculator\n' +
+        '- Tax Tracking & Reports\n' +
+        '- Goals & Savings Tracking\n' +
+        '- Advanced Analytics\n' +
+        '- Export to CSV/PDF\n' +
+        '- Unlimited History\n\n' +
+        'We\'ll notify you as soon as it\'s ready!',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      const success = await purchase(selectedPackage);
+
+      if (success) {
+        Alert.alert(
+          'Welcome to Premium!',
+          'Your subscription is now active. Enjoy all the premium features!',
+          [
+            {
+              text: 'Get Started',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      if (!error.userCancelled) {
+        Alert.alert('Purchase Failed', error.message || 'Something went wrong. Please try again.');
+      }
+    }
   };
+
+  const handleRestore = async () => {
+    try {
+      const restored = await restore();
+
+      if (restored) {
+        Alert.alert(
+          'Purchases Restored',
+          'Your premium subscription has been restored!',
+          [
+            {
+              text: 'Great!',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'No Purchases Found',
+          'We couldn\'t find any previous purchases to restore. If you believe this is an error, please contact support.'
+        );
+      }
+    } catch (error: any) {
+      Alert.alert('Restore Failed', error.message || 'Failed to restore purchases. Please try again.');
+    }
+  };
+
+  // Show error alert if there's an error
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Error', error, [{ text: 'OK', onPress: clearError }]);
+    }
+  }, [error]);
+
+  // If already premium, show different UI
+  if (isPremium) {
+    return (
+      <View style={styles.container}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.premiumActiveSection}>
+            <Text style={styles.premiumEmoji}>🎉</Text>
+            <Text style={styles.premiumTitle}>You're a Premium Member!</Text>
+            <Text style={styles.premiumSubtitle}>
+              Thank you for supporting TipFly AI. Enjoy all the premium features!
+            </Text>
+
+            <View style={styles.premiumFeatures}>
+              <PremiumFeatureCheck title="Unlimited History" />
+              <PremiumFeatureCheck title="AI Tip Predictions" />
+              <PremiumFeatureCheck title="Bill Split Calculator" />
+              <PremiumFeatureCheck title="Tax Tracking" />
+              <PremiumFeatureCheck title="Advanced Analytics" />
+              <PremiumFeatureCheck title="Export Reports" />
+              <PremiumFeatureCheck title="No Ads" />
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -48,9 +179,9 @@ export default function UpgradeScreen() {
             description="Track tips forever, never lose your data"
           />
           <Feature
-            icon="camera"
-            title="Receipt Scanning"
-            description="Snap & scan receipts in 2 seconds with AI"
+            icon="sparkles"
+            title="AI Tip Predictions"
+            description="Know your best earning days before they happen"
           />
           <Feature
             icon="calculator"
@@ -97,7 +228,7 @@ export default function UpgradeScreen() {
             onPress={() => setSelectedPlan('annual')}
           >
             <View style={styles.pricingBadge}>
-              <Text style={styles.pricingBadgeText}>SAVE 33%</Text>
+              <Text style={styles.pricingBadgeText}>SAVE {savings}%</Text>
             </View>
             <View style={styles.pricingHeader}>
               <View style={styles.pricingRadio}>
@@ -105,8 +236,12 @@ export default function UpgradeScreen() {
               </View>
               <View style={styles.pricingInfo}>
                 <Text style={styles.pricingPlan}>Annual</Text>
-                <Text style={styles.pricingPrice}>$39.99/year</Text>
-                <Text style={styles.pricingDesc}>Just $3.33/month - Best value!</Text>
+                <Text style={styles.pricingPrice}>
+                  {annualPackage ? formatPrice(annualPackage) : `$${AppConfig.PREMIUM_ANNUAL_PRICE}/year`}
+                </Text>
+                <Text style={styles.pricingDesc}>
+                  Just {annualPackage ? getMonthlyEquivalent(annualPackage) : '$3.33'}/month - Best value!
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -125,7 +260,9 @@ export default function UpgradeScreen() {
               </View>
               <View style={styles.pricingInfo}>
                 <Text style={styles.pricingPlan}>Monthly</Text>
-                <Text style={styles.pricingPrice}>$4.99/month</Text>
+                <Text style={styles.pricingPrice}>
+                  {monthlyPackage ? formatPrice(monthlyPackage) : `$${AppConfig.PREMIUM_MONTHLY_PRICE}/month`}
+                </Text>
                 <Text style={styles.pricingDesc}>Billed monthly, cancel anytime</Text>
               </View>
             </View>
@@ -142,29 +279,47 @@ export default function UpgradeScreen() {
             </Text>
             <Text style={styles.testimonialAuthor}>— Sarah, Server in Chicago</Text>
             <View style={styles.testimonialStars}>
-              <Text>⭐⭐⭐⭐⭐</Text>
+              <Text style={styles.starsText}>*****</Text>
             </View>
           </View>
 
           <View style={styles.testimonialCard}>
             <Text style={styles.testimonialText}>
-              "The receipt scanner is a game changer. Logging tips takes 2 seconds now."
+              "The AI predictions helped me pick up the best shifts. Made an extra $200 last month!"
             </Text>
             <Text style={styles.testimonialAuthor}>— Alex, Bartender in NYC</Text>
             <View style={styles.testimonialStars}>
-              <Text>⭐⭐⭐⭐⭐</Text>
+              <Text style={styles.starsText}>*****</Text>
             </View>
           </View>
         </View>
 
         {/* CTA Button */}
-        <TouchableOpacity style={styles.ctaButton} onPress={handleUpgrade}>
-          <Text style={styles.ctaButtonText}>
-            Start 7-Day Free Trial
-          </Text>
-          <Text style={styles.ctaButtonSubtext}>
-            Then {selectedPlan === 'monthly' ? '$4.99/month' : '$39.99/year'}, cancel anytime
-          </Text>
+        <TouchableOpacity
+          style={[styles.ctaButton, isLoading && styles.ctaButtonDisabled]}
+          onPress={handleUpgrade}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={Colors.white} size="small" />
+          ) : (
+            <>
+              <Text style={styles.ctaButtonText}>
+                Start 7-Day Free Trial
+              </Text>
+              <Text style={styles.ctaButtonSubtext}>
+                Then{' '}
+                {selectedPlan === 'monthly'
+                  ? monthlyPackage
+                    ? formatPrice(monthlyPackage)
+                    : `$${AppConfig.PREMIUM_MONTHLY_PRICE}/month`
+                  : annualPackage
+                  ? formatPrice(annualPackage)
+                  : `$${AppConfig.PREMIUM_ANNUAL_PRICE}/year`}
+                , cancel anytime
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
 
         {/* Fine Print */}
@@ -174,8 +329,10 @@ export default function UpgradeScreen() {
         </Text>
 
         {/* Restore Purchase Link */}
-        <TouchableOpacity onPress={() => Alert.alert('Restore', 'Restore purchase coming soon')}>
-          <Text style={styles.restoreLink}>Already subscribed? Restore purchase</Text>
+        <TouchableOpacity onPress={handleRestore} disabled={isLoading}>
+          <Text style={[styles.restoreLink, isLoading && styles.restoreLinkDisabled]}>
+            Already subscribed? Restore purchase
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -201,6 +358,15 @@ function Feature({
         <Text style={styles.featureDescription}>{description}</Text>
       </View>
       <Ionicons name="checkmark-circle" size={24} color={Colors.success} />
+    </View>
+  );
+}
+
+function PremiumFeatureCheck({ title }: { title: string }) {
+  return (
+    <View style={styles.premiumFeatureItem}>
+      <Ionicons name="checkmark-circle" size={22} color={Colors.success} />
+      <Text style={styles.premiumFeatureText}>{title}</Text>
     </View>
   );
 }
@@ -244,9 +410,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   featureIcon: {
     width: 48,
@@ -280,7 +448,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pricingCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     borderWidth: 2,
@@ -289,7 +457,7 @@ const styles = StyleSheet.create({
   },
   pricingCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight + '10',
+    backgroundColor: Colors.primary + '20',
   },
   pricingBadge: {
     position: 'absolute',
@@ -355,10 +523,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   testimonialCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     padding: 20,
     borderRadius: 12,
     gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   testimonialText: {
     fontSize: 15,
@@ -374,6 +544,11 @@ const styles = StyleSheet.create({
   testimonialStars: {
     flexDirection: 'row',
   },
+  starsText: {
+    color: Colors.warning,
+    fontSize: 18,
+    letterSpacing: 2,
+  },
   ctaButton: {
     backgroundColor: Colors.primary,
     paddingVertical: 20,
@@ -385,6 +560,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  ctaButtonDisabled: {
+    opacity: 0.7,
   },
   ctaButtonText: {
     fontSize: 20,
@@ -409,5 +587,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
     marginBottom: 20,
+  },
+  restoreLinkDisabled: {
+    opacity: 0.5,
+  },
+  // Premium active styles
+  premiumActiveSection: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  premiumEmoji: {
+    fontSize: 80,
+    marginBottom: 20,
+  },
+  premiumTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  premiumSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  premiumFeatures: {
+    gap: 12,
+    width: '100%',
+  },
+  premiumFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.card,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  premiumFeatureText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.text,
   },
 });

@@ -325,7 +325,7 @@ export default function TaxTrackingScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="0.00"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.inputPlaceholder}
                   value={deductionAmount}
                   onChangeText={setDeductionAmount}
                   keyboardType="decimal-pad"
@@ -337,7 +337,7 @@ export default function TaxTrackingScreen() {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="e.g., Gas for deliveries"
-                placeholderTextColor={Colors.gray400}
+                placeholderTextColor={Colors.inputPlaceholder}
                 value={deductionDescription}
                 onChangeText={setDeductionDescription}
                 multiline
@@ -444,7 +444,9 @@ export default function TaxTrackingScreen() {
               </View>
 
               <View style={styles.guideTip}>
-                <Ionicons name="bulb" size={24} color={Colors.accent} />
+                <View style={styles.guideTipIcon}>
+                  <Ionicons name="bulb" size={24} color={Colors.accent} />
+                </View>
                 <View style={styles.guideTipContent}>
                   <Text style={styles.guideTipTitle}>Pro Tips:</Text>
                   <Text style={styles.guideTipText}>
@@ -473,7 +475,9 @@ export default function TaxTrackingScreen() {
               </View>
 
               <View style={styles.guideFooter}>
-                <Ionicons name="information-circle" size={20} color={Colors.textSecondary} />
+                <View style={styles.guideFooterIcon}>
+                  <Ionicons name="information-circle" size={20} color={Colors.textSecondary} />
+                </View>
                 <Text style={styles.guideFooterText}>
                   This guide is for educational purposes. Always consult with a qualified tax professional for advice specific to your situation.
                 </Text>
@@ -542,9 +546,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 32,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     paddingVertical: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   yearButton: {
     padding: 8,
@@ -555,13 +561,15 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   summaryCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 3,
   },
@@ -629,10 +637,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   quarterCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   quarterHeader: {
     flexDirection: 'row',
@@ -670,8 +680,10 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   emptyText: {
     fontSize: 16,
@@ -691,9 +703,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   deductionInfo: {
     flex: 1,
@@ -727,10 +741,12 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   tipsCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   tipsTitle: {
     fontSize: 18,
@@ -749,7 +765,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundSecondary,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -788,7 +804,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundTertiary,
   },
   categoryButtonActive: {
     backgroundColor: Colors.primary,
@@ -805,10 +821,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundDark,
+    backgroundColor: Colors.inputBackground,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.inputBorder,
     paddingHorizontal: 16,
   },
   inputPrefix: {
@@ -822,10 +838,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     color: Colors.text,
-    backgroundColor: Colors.backgroundDark,
+    backgroundColor: Colors.inputBackground,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.inputBorder,
     paddingHorizontal: 16,
   },
   textArea: {
@@ -853,22 +869,25 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   guideModal: {
-    maxHeight: '90%',
+    height: '90%',
+    display: 'flex',
   },
   guideScroll: {
     flex: 1,
+    maxHeight: '100%',
   },
   guideContent: {
     padding: 20,
-    gap: 20,
+    paddingBottom: 40,
   },
   guideIntro: {
     fontSize: 16,
     lineHeight: 24,
     color: Colors.text,
+    marginBottom: 24,
   },
   guideSection: {
-    gap: 16,
+    marginBottom: 24,
   },
   guideSectionTitle: {
     fontSize: 18,
@@ -877,12 +896,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   guideItem: {
-    gap: 8,
+    marginBottom: 16,
   },
   guideItemTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
+    marginBottom: 8,
   },
   guideItemText: {
     fontSize: 14,
@@ -894,7 +914,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundLight,
     padding: 16,
     borderRadius: 12,
-    gap: 12,
+    marginBottom: 20,
+  },
+  guideTipIcon: {
+    marginRight: 12,
   },
   guideTipContent: {
     flex: 1,
@@ -916,6 +939,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: Colors.primary,
+    marginBottom: 20,
   },
   guideExampleTitle: {
     fontSize: 16,
@@ -930,10 +954,14 @@ const styles = StyleSheet.create({
   },
   guideFooter: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'flex-start',
     padding: 16,
     backgroundColor: Colors.backgroundLight,
     borderRadius: 12,
+  },
+  guideFooterIcon: {
+    marginRight: 8,
+    marginTop: 2,
   },
   guideFooterText: {
     flex: 1,

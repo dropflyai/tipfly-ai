@@ -150,7 +150,7 @@ export default function EditJobModal({
               style={styles.closeButton}
               disabled={loading}
             >
-              <Ionicons name="close" size={24} color={Colors.gray600} />
+              <Ionicons name="close" size={24} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -314,13 +314,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
     paddingBottom: 40,
     paddingHorizontal: 20,
     maxHeight: '90%',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderBottomWidth: 0,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -346,7 +349,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -370,7 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: Colors.gray100,
+    backgroundColor: Colors.backgroundTertiary,
     gap: 6,
   },
   jobTypeButtonActive: {
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
   moneyInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,

@@ -70,9 +70,8 @@ export default function GoalsSection({
 
       <View style={styles.goalsList}>
         {goals.slice(0, 2).map((goal) => {
-          const progress = calculateProgress(goal);
-          const progressPercent = Math.min((progress.current / progress.target) * 100, 100);
-          const isComplete = progressPercent >= 100;
+          const progressPercent = calculateProgress(goal);
+          const isComplete = goal.status === 'completed';
 
           return (
             <TouchableOpacity
@@ -98,14 +97,16 @@ export default function GoalsSection({
                     size={20}
                     color={isComplete ? Colors.success : Colors.primary}
                   />
-                  <Text style={styles.goalTitle}>{goal.name}</Text>
+                  <Text style={styles.goalTitle}>
+                    {goal.goal_type.charAt(0).toUpperCase() + goal.goal_type.slice(1)} Goal
+                  </Text>
                 </View>
-                <Text style={styles.goalPeriod}>{getGoalPeriodLabel(goal.period)}</Text>
+                <Text style={styles.goalPeriod}>{getGoalPeriodLabel(goal)}</Text>
               </View>
 
               <View style={styles.progressInfo}>
                 <Text style={styles.progressLabel}>
-                  {formatCurrency(progress.current)} of {formatCurrency(progress.target)}
+                  {formatCurrency(goal.current_amount)} of {formatCurrency(goal.target_amount)}
                 </Text>
                 <Text style={[styles.progressPercent, isComplete && styles.progressPercentComplete]}>
                   {progressPercent.toFixed(0)}%
@@ -169,15 +170,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   goalCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     gap: 16,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   completeBadge: {
     flexDirection: 'row',
@@ -234,7 +232,7 @@ const styles = StyleSheet.create({
   },
   progressBarBackground: {
     height: 8,
-    backgroundColor: Colors.gray200,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -243,16 +241,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   emptyCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
     gap: 16,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   iconCircle: {
     width: 72,
@@ -292,7 +287,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundSecondary,
     borderWidth: 2,
     borderColor: Colors.primary + '30',
     borderStyle: 'dashed',

@@ -104,14 +104,11 @@ export default function DailyInsightCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderLeftWidth: 4,
   },
   loadingContainer: {
@@ -177,7 +174,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     padding: 12,
     borderRadius: 10,
   },

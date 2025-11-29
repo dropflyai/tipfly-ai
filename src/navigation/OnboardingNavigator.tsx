@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
+import FeatureTourScreen from '../screens/onboarding/FeatureTourScreen';
 import AddFirstTipScreen from '../screens/onboarding/AddFirstTipScreen';
 import SuccessScreen from '../screens/onboarding/SuccessScreen';
 import { useUserStore } from '../store/userStore';
@@ -16,16 +16,22 @@ export default function OnboardingNavigator() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: false,
-        animationEnabled: true,
       }}
     >
-      <Stack.Screen name="Welcome">
+      {/* Feature Tour - 3 swipeable screens */}
+      <Stack.Screen name="FeatureTour">
         {(props) => (
-          <WelcomeScreen
-            onNext={() => props.navigation.navigate('AddFirstTip')}
+          <FeatureTourScreen
+            onComplete={() => props.navigation.navigate('AddFirstTip')}
+            onSkip={() => {
+              setHasAddedTip(false);
+              props.navigation.navigate('Success');
+            }}
           />
         )}
       </Stack.Screen>
+
+      {/* Add First Tip - with pre-filled example */}
       <Stack.Screen name="AddFirstTip">
         {(props) => (
           <AddFirstTipScreen
@@ -41,6 +47,8 @@ export default function OnboardingNavigator() {
           />
         )}
       </Stack.Screen>
+
+      {/* Success - celebration screen */}
       <Stack.Screen name="Success">
         {(props) => (
           <SuccessScreen

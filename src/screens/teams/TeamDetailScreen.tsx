@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import * as Clipboard from 'expo-clipboard';
 import { Colors, GradientColors } from '../../constants/colors';
 import { WorkplaceWithMembers, TipPool } from '../../types/teams';
 import { getWorkplacePools } from '../../services/api/tipPools';
@@ -38,10 +40,29 @@ export default function TeamDetailScreen() {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     loadTeamData();
   }, []);
+
+  const handleCopyCode = async () => {
+    lightHaptic();
+    await Clipboard.setStringAsync(team.invite_code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareCode = async () => {
+    lightHaptic();
+    try {
+      await Share.share({
+        message: `Join my team "${team.name}" on TipFly AI!\n\nInvite code: ${team.invite_code}`,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
 
   const loadTeamData = async () => {
     try {
@@ -82,6 +103,35 @@ export default function TeamDetailScreen() {
   const handlePoolPress = (pool: TipPool) => {
     lightHaptic();
     navigation.navigate('PoolDetail', { pool, team });
+  };
+
+  const getInitials = (name: string): string => {
+    const words = name.trim().split(' ');
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const obfuscateEmail = (email: string): string => {
+    if (!email) return '';
+    const [local, domain] = email.split('@');
+    if (!domain) return email;
+    const visibleChars = Math.min(2, local.length);
+    return `${local.substring(0, visibleChars)}***@${domain}`;
+  };
+
+  const formatJoinDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Joined today';
+    if (diffDays === 1) return 'Joined yesterday';
+    if (diffDays < 7) return `Joined ${diffDays} days ago`;
+    if (diffDays < 30) return `Joined ${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `Joined ${Math.floor(diffDays / 30)} months ago`;
+    return `Joined ${formatDate(date)}`;
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -148,14 +198,86 @@ export default function TeamDetailScreen() {
           />
         }
       >
-        {/* Invite Code Section */}
+        {/* Team Members Section - Member Cards */}
+        <View style={styles.membersSection}>
+          <Text style={styles.sectionTitle}>
+            Team Members ({members.length})
+          </Text>
+          {members.length === 0 ? (
+            <Text style={styles.emptyMembersText}>No members yet</Text>
+          ) : (
+            members.map((member) => (
+              <View key={member.id} style={styles.memberCard}>
+                {/* Avatar with Initials */}
+                <View style={[
+                  styles.memberAvatar,
+                  member.isCurrentUser && styles.memberAvatarCurrent
+                ]}>
+                  <Text style={styles.memberInitials}>
+                    {getInitials(member.name || 'TM')}
+                  </Text>
+                </View>
+
+                {/* Member Info */}
+                <View style={styles.memberInfo}>
+                  <View style={styles.memberNameRow}>
+                    <Text style={styles.memberName}>{member.name || 'Team Member'}</Text>
+                    {member.role === 'owner' && (
+                      <View style={styles.ownerBadge}>
+                        <Ionicons name="star" size={12} color={Colors.warning} />
+                        <Text style={styles.ownerBadgeText}>Owner</Text>
+                      </View>
+                    )}
+                  </View>
+                  {member.email && (
+                    <Text style={styles.memberEmail}>
+                      {obfuscateEmail(member.email)}
+                    </Text>
+                  )}
+                  <Text style={styles.memberJoinDate}>
+                    {formatJoinDate(member.joined_at)}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* Invite Code Section with Copy/Share */}
         <View style={styles.inviteSection}>
-          <Text style={styles.sectionTitle}>Invite Code</Text>
+          <Text style={styles.sectionTitle}>Invite Team Members</Text>
+
+          {/* Invite Code with Copy */}
           <View style={styles.inviteCodeCard}>
-            <Ionicons name="key" size={20} color={Colors.primary} />
-            <Text style={styles.inviteCodeText}>{team.invite_code}</Text>
-            <Text style={styles.inviteHint}>Share with team members</Text>
+            <View style={styles.inviteCodeLeft}>
+              <Text style={styles.inviteCodeLabel}>Invite Code</Text>
+              <Text style={styles.inviteCodeText}>{team.invite_code}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.copyButton}
+              onPress={handleCopyCode}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={copied ? 'checkmark' : 'copy-outline'}
+                size={20}
+                color={copied ? Colors.success : Colors.primary}
+              />
+              <Text style={[styles.copyButtonText, copied && styles.copiedText]}>
+                {copied ? 'Copied!' : 'Copy'}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Share Button */}
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShareCode}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-outline" size={20} color={Colors.primary} />
+            <Text style={styles.shareButtonText}>Share Invite</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Create Pool Button */}
@@ -224,7 +346,7 @@ export default function TeamDetailScreen() {
                     <View style={styles.poolAmount}>
                       <Text style={styles.poolAmountLabel}>Total Pool</Text>
                       <Text style={styles.poolAmountValue}>
-                        {formatCurrency(parseFloat(pool.total_amount))}
+                        {formatCurrency(pool.total_amount)}
                       </Text>
                     </View>
 
@@ -271,7 +393,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -297,6 +419,78 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
+  membersSection: {
+    marginBottom: 24,
+  },
+  emptyMembersText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  memberCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 8,
+  },
+  memberAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.gray700,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  memberAvatarCurrent: {
+    backgroundColor: Colors.primary,
+  },
+  memberInitials: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.white,
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginRight: 8,
+  },
+  ownerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.warning + '20',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    gap: 3,
+  },
+  ownerBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.warning,
+  },
+  memberEmail: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 2,
+  },
+  memberJoinDate: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
   inviteSection: {
     marginBottom: 24,
   },
@@ -309,23 +503,62 @@ const styles = StyleSheet.create({
   inviteCodeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primaryLight,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    backgroundColor: Colors.card,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 12,
+  },
+  inviteCodeLeft: {
+    flex: 1,
+  },
+  inviteCodeLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 2,
   },
   inviteCodeText: {
-    flex: 1,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: Colors.text,
     fontFamily: 'monospace',
     letterSpacing: 3,
   },
-  inviteHint: {
-    fontSize: 12,
-    color: Colors.gray500,
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    gap: 6,
+  },
+  copyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  copiedText: {
+    color: Colors.success,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.card,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    gap: 8,
+  },
+  shareButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   createPoolButton: {
     marginBottom: 32,
@@ -371,7 +604,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   poolCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -435,7 +668,7 @@ const styles = StyleSheet.create({
   },
   poolMetaText: {
     fontSize: 13,
-    color: Colors.gray500,
+    color: Colors.textSecondary,
   },
   poolFooter: {
     alignItems: 'flex-end',

@@ -29,25 +29,23 @@ export default function MainTabNavigator() {
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.gray400,
+          tabBarInactiveTintColor: Colors.textSecondary,
           headerShown: false,
           tabBarStyle: {
             position: 'absolute',
-            backgroundColor: Platform.OS === 'ios' ? 'transparent' : Colors.white,
-            borderTopWidth: 0,
+            backgroundColor: Platform.OS === 'ios' ? 'transparent' : Colors.backgroundSecondary,
+            borderTopWidth: 1,
+            borderTopColor: Colors.border,
             elevation: 0,
-            height: 60,
-            paddingBottom: 8,
+            height: 70,
+            paddingBottom: Platform.OS === 'ios' ? 20 : 12,
             paddingTop: 8,
-            shadowColor: Colors.gray900,
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
+            bottom: Platform.OS === 'ios' ? 0 : 8,
           },
           tabBarBackground: () => (
             Platform.OS === 'ios' ? (
               <BlurView
-                tint="light"
+                tint="dark"
                 intensity={95}
                 style={StyleSheet.absoluteFill}
               />
@@ -129,7 +127,7 @@ export default function MainTabNavigator() {
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    bottom: 80,
+    bottom: Platform.OS === 'ios' ? 90 : 90,
     right: 20,
     width: 64,
     height: 64,
@@ -137,9 +135,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.gray900,
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 12,
   },

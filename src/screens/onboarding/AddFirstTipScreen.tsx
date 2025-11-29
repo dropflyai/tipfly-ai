@@ -8,7 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { lightHaptic, mediumHaptic, successHaptic } from '../../utils/haptics';
@@ -21,9 +23,9 @@ interface AddFirstTipScreenProps {
 }
 
 export default function AddFirstTipScreen({ onNext, onSkip }: AddFirstTipScreenProps) {
-  const [tips, setTips] = useState('');
-  const [hours, setHours] = useState('');
-  const [showTooltip, setShowTooltip] = useState(true);
+  // Pre-fill with example values
+  const [tips, setTips] = useState('50');
+  const [hours, setHours] = useState('5');
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
@@ -61,309 +63,291 @@ export default function AddFirstTipScreen({ onNext, onSkip }: AddFirstTipScreenP
     onSkip();
   };
 
+  const hourlyRate = tips && hours && parseFloat(tips) > 0 && parseFloat(hours) > 0
+    ? (parseFloat(tips) / parseFloat(hours)).toFixed(2)
+    : null;
+
   return (
-    <KeyboardAvoidingView
+    <LinearGradient
+      colors={['#0F172A', '#1E293B', '#0F172A']}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+      <StatusBar barStyle="light-content" />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Add Your First Tip</Text>
-          <Text style={styles.subtitle}>
-            Let's start tracking your earnings! Enter today's tips and hours worked.
-          </Text>
-        </View>
-
-        {/* Tooltip */}
-        {showTooltip && (
-          <View style={styles.tooltip}>
-            <View style={styles.tooltipContent}>
-              <Ionicons name="bulb" size={24} color={Colors.primary} />
-              <Text style={styles.tooltipText}>
-                Don't worry, you can always edit or delete this entry later!
-              </Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="add-circle-outline" size={48} color="#10B981" />
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                lightHaptic();
-                setShowTooltip(false);
-              }}
-              style={styles.tooltipClose}
-            >
-              <Ionicons name="close" size={20} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Form Card */}
-        <View style={styles.formCard}>
-          {/* Tips Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tips Amount</Text>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputPrefix}>$</Text>
-              <TextInput
-                style={styles.input}
-                value={tips}
-                onChangeText={setTips}
-                placeholder="0.00"
-                placeholderTextColor={Colors.gray400}
-                keyboardType="decimal-pad"
-                returnKeyType="next"
-              />
-            </View>
-            <Text style={styles.hint}>Total tips you earned today</Text>
-          </View>
-
-          {/* Hours Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Hours Worked</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="time-outline" size={20} color={Colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                value={hours}
-                onChangeText={setHours}
-                placeholder="0.0"
-                placeholderTextColor={Colors.gray400}
-                keyboardType="decimal-pad"
-                returnKeyType="done"
-                onSubmitEditing={handleSave}
-              />
-              <Text style={styles.inputSuffix}>hrs</Text>
-            </View>
-            <Text style={styles.hint}>How long did you work today?</Text>
-          </View>
-
-          {/* Hourly Rate Preview */}
-          {tips && hours && parseFloat(tips) > 0 && parseFloat(hours) > 0 && (
-            <View style={styles.previewCard}>
-              <Ionicons name="trending-up" size={24} color={Colors.success} />
-              <View style={styles.previewContent}>
-                <Text style={styles.previewLabel}>Your hourly rate</Text>
-                <Text style={styles.previewValue}>
-                  ${(parseFloat(tips) / parseFloat(hours)).toFixed(2)}/hr
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={24} color={Colors.primary} />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Why track tips?</Text>
-            <Text style={styles.infoText}>
-              TipFly AI helps you understand your earnings patterns, track tax deductions, and set realistic income goals.
+            <Text style={styles.title}>Add Your First Tip</Text>
+            <Text style={styles.subtitle}>
+              How much did you make today? You can adjust these numbers.
             </Text>
           </View>
+
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            {/* Tips Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tips Amount</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputPrefix}>$</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tips}
+                  onChangeText={setTips}
+                  placeholder="0.00"
+                  placeholderTextColor={Colors.inputPlaceholder}
+                  keyboardType="decimal-pad"
+                  returnKeyType="next"
+                  selectionColor={Colors.primary}
+                />
+              </View>
+            </View>
+
+            {/* Hours Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Hours Worked</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="time-outline" size={20} color={Colors.textSecondary} />
+                <TextInput
+                  style={styles.input}
+                  value={hours}
+                  onChangeText={setHours}
+                  placeholder="0.0"
+                  placeholderTextColor={Colors.inputPlaceholder}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSave}
+                  selectionColor={Colors.primary}
+                />
+                <Text style={styles.inputSuffix}>hrs</Text>
+              </View>
+            </View>
+
+            {/* Hourly Rate Preview */}
+            {hourlyRate && (
+              <View style={styles.previewCard}>
+                <Ionicons name="trending-up" size={28} color="#10B981" />
+                <View style={styles.previewContent}>
+                  <Text style={styles.previewLabel}>Your hourly rate</Text>
+                  <Text style={styles.previewValue}>${hourlyRate}/hr</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Encouragement Card */}
+          <View style={styles.encouragementCard}>
+            <Ionicons name="sparkles" size={24} color="#F59E0B" />
+            <Text style={styles.encouragementText}>
+              Great start! Once you add more tips, AI will predict your earnings.
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Buttons */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleSkip}
+          >
+            <Text style={styles.skipButtonText}>I'll do this later</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              (!tips || !hours) && styles.saveButtonDisabled
+            ]}
+            onPress={handleSave}
+            disabled={!tips || !hours || loading}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButtonGradient}
+            >
+              <Text style={styles.saveButtonText}>
+                {loading ? 'Saving...' : 'Save & Continue'}
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
-
-      {/* Buttons */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}
-        >
-          <Text style={styles.skipButtonText}>Skip for now</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            (!tips || !hours) && styles.saveButtonDisabled
-          ]}
-          onPress={handleSave}
-          disabled={!tips || !hours || loading}
-        >
-          <Text style={styles.saveButtonText}>
-            {loading ? 'Saving...' : 'Continue'}
-          </Text>
-          <Ionicons name="arrow-forward" size={20} color={Colors.white} />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundDark,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 24,
-    gap: 20,
+    paddingTop: 60,
+    gap: 24,
   },
   header: {
+    alignItems: 'center',
     marginBottom: 8,
   },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
-    color: Colors.text,
+    color: '#FFFFFF',
     marginBottom: 12,
+    textAlign: 'center',
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.7)',
     lineHeight: 24,
-  },
-  tooltip: {
-    backgroundColor: Colors.accent,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  tooltipContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  tooltipText: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.white,
-    lineHeight: 20,
-  },
-  tooltipClose: {
-    padding: 4,
+    textAlign: 'center',
   },
   formCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 24,
     gap: 24,
-    shadowColor: Colors.gray900,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   inputGroup: {
-    gap: 8,
+    gap: 10,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: Colors.text,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundLight,
-    borderRadius: 12,
+    backgroundColor: Colors.backgroundTertiary,
+    borderRadius: 14,
     paddingHorizontal: 16,
-    height: 56,
+    height: 60,
     gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   inputPrefix: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
-    color: Colors.text,
+    color: '#FFFFFF',
   },
   inputSuffix: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '500',
   },
   input: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
-    color: Colors.text,
-  },
-  hint: {
-    fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#FFFFFF',
   },
   previewCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.successLight,
-    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderRadius: 14,
     padding: 16,
-    gap: 12,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
   previewContent: {
     flex: 1,
   },
   previewLabel: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: 4,
   },
   previewValue: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
-    color: Colors.success,
+    color: '#10B981',
   },
-  infoCard: {
+  encouragementCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 14,
+    padding: 16,
+    gap: 14,
     borderWidth: 1,
-    borderColor: Colors.gray200,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
   },
-  infoContent: {
+  encouragementText: {
     flex: 1,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  infoText: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 20,
   },
   buttonContainer: {
     flexDirection: 'row',
     padding: 24,
     gap: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray200,
+    borderTopColor: Colors.border,
   },
   skipButton: {
-    flex: 1,
+    flex: 0.8,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: Colors.backgroundLight,
+    borderRadius: 14,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   skipButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.6)',
   },
   saveButton: {
-    flex: 1,
+    flex: 1.2,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  saveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
     gap: 8,
   },
   saveButtonDisabled: {
@@ -372,6 +356,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.white,
+    color: '#FFFFFF',
   },
 });

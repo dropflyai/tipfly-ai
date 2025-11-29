@@ -252,7 +252,7 @@ export default function SettingsScreen() {
             <SettingsOption
               icon="lock-closed-outline"
               title="Privacy"
-              onPress={() => Alert.alert('Coming Soon', 'Privacy settings will be available soon')}
+              onPress={() => navigation.navigate('PrivacySettings' as never)}
             />
           </View>
         </View>
@@ -403,6 +403,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     gap: 24,
+    paddingBottom: 120,
   },
   section: {
     gap: 12,
@@ -415,17 +416,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   profileCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   profileIcon: {
     width: 64,
@@ -454,18 +452,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   subscriptionCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 16,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   subscriptionInfo: {
     flex: 1,
@@ -492,14 +487,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   optionsList: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   optionItem: {
     flexDirection: 'row',
@@ -507,7 +499,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray100,
+    borderBottomColor: Colors.border,
   },
   optionLeft: {
     flexDirection: 'row',
@@ -534,7 +526,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 16,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.error + '30',

@@ -1,5 +1,5 @@
 // Goals Management Screen - Create, view, and manage savings goals
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -35,6 +36,7 @@ export default function GoalsScreen() {
   const [targetAmount, setTargetAmount] = useState('');
   const [creating, setCreating] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   // Fetch goals when screen comes into focus
   useFocusEffect(
@@ -342,13 +344,24 @@ export default function GoalsScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.inputPrefix}>$</Text>
                 <TextInput
+                  ref={inputRef}
                   style={styles.input}
                   value={targetAmount}
                   onChangeText={setTargetAmount}
                   placeholder="0.00"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.inputPlaceholder}
                   keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
                 />
+                {targetAmount && (
+                  <TouchableOpacity
+                    style={styles.doneButton}
+                    onPress={() => Keyboard.dismiss()}
+                  >
+                    <Ionicons name="checkmark-circle" size={28} color={Colors.primary} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -505,13 +518,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   goalCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 3,
   },
@@ -661,7 +676,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundSecondary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -697,7 +712,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: Colors.primary,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundTertiary,
   },
   goalTypeButtonActive: {
     backgroundColor: Colors.primary,
@@ -713,10 +728,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.inputBackground,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray200,
+    borderColor: Colors.inputBorder,
     paddingHorizontal: 16,
   },
   inputPrefix: {
@@ -730,6 +745,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.text,
     paddingVertical: 16,
+  },
+  doneButton: {
+    padding: 4,
   },
   modalButton: {
     backgroundColor: Colors.primary,

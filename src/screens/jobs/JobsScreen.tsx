@@ -23,11 +23,15 @@ import {
 } from '../../services/api/jobs';
 import { lightHaptic, mediumHaptic } from '../../utils/haptics';
 import { formatCurrency } from '../../utils/formatting';
+import { useUserStore } from '../../store/userStore';
 import CreateJobModal from './CreateJobModal';
 import EditJobModal from './EditJobModal';
 
+const FREE_JOB_LIMIT = 1;
+
 export default function JobsScreen() {
   const navigation = useNavigation();
+  const isPremium = useUserStore((state) => state.isPremium());
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobStats, setJobStats] = useState<JobStatistics[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +68,22 @@ export default function JobsScreen() {
 
   const handleCreateJob = () => {
     lightHaptic();
+
+    // Check premium gating - free users limited to 1 job
+    if (!isPremium && jobs.length >= FREE_JOB_LIMIT) {
+      Alert.alert(
+        'Upgrade to Premium',
+        'Free tier includes 1 job. Upgrade to Premium for unlimited job tracking across all your workplaces!',
+        [
+          { text: 'Maybe Later', style: 'cancel' },
+          { text: 'Upgrade for $2.99/month', onPress: () => {
+            navigation.navigate('Upgrade' as never);
+          }},
+        ]
+      );
+      return;
+    }
+
     setCreateModalVisible(true);
   };
 
@@ -195,6 +215,16 @@ export default function JobsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* Premium Banner */}
+        {!isPremium && (
+          <View style={styles.premiumBanner}>
+            <Ionicons name="star" size={16} color={Colors.accent} />
+            <Text style={styles.premiumBannerText}>
+              Free: 1 job • Premium: Unlimited jobs
+            </Text>
+          </View>
+        )}
+
         {jobs.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconContainer}>
@@ -404,7 +434,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.gray100,
+    backgroundColor: Colors.backgroundTertiary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -437,15 +467,17 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   jobCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
-    shadowColor: Colors.gray900,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   jobHeader: {
     flexDirection: 'row',
@@ -495,7 +527,7 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -529,7 +561,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gray100,
+    backgroundColor: Colors.backgroundTertiary,
     paddingVertical: 10,
     borderRadius: 10,
     gap: 6,
@@ -544,5 +576,21 @@ const styles = StyleSheet.create({
   },
   actionButtonTextDanger: {
     color: Colors.danger,
+  },
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.accent + '20',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 6,
+  },
+  premiumBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
   },
 });

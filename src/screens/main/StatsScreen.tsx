@@ -115,18 +115,18 @@ export default function StatsScreen() {
   };
 
   const chartConfig = {
-    backgroundColor: Colors.white,
-    backgroundGradientFrom: Colors.white,
-    backgroundGradientTo: Colors.white,
+    backgroundColor: Colors.card,
+    backgroundGradientFrom: Colors.card,
+    backgroundGradientTo: Colors.card,
     decimalPlaces: 0,
     color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.7})`,
     style: {
       borderRadius: 16,
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: Colors.gray200,
+      stroke: Colors.border,
       strokeWidth: 1,
     },
   };
@@ -375,6 +375,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     gap: 16,
+    paddingBottom: 120,
   },
   summaryCard: {
     backgroundColor: Colors.primary,
@@ -413,14 +414,11 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   chartCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 16,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   chartTitle: {
     fontSize: 18,
@@ -467,7 +465,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.gray100,
+    backgroundColor: Colors.backgroundTertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -487,7 +485,7 @@ const styles = StyleSheet.create({
   },
   timeBar: {
     height: 8,
-    backgroundColor: Colors.gray100,
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -525,17 +523,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   upgradCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 24,
     gap: 20,
     borderWidth: 2,
     borderColor: Colors.accent,
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
   },
   upgradeContent: {
     alignItems: 'center',

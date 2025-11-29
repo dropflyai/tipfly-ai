@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -625,14 +625,14 @@ const styles = StyleSheet.create({
   },
   shiftButtonText: {
     fontSize: 14,
-    color: Colors.gray600,
+    color: Colors.textSecondary,
   },
   shiftButtonTextActive: {
     color: Colors.white,
     fontWeight: '600',
   },
   amountInput: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderWidth: 2,
     borderColor: Colors.border,
   },
@@ -665,13 +665,13 @@ const styles = StyleSheet.create({
   splitTypeButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.gray600,
+    color: Colors.textSecondary,
   },
   splitTypeButtonTextActive: {
     color: Colors.white,
   },
   participantCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   },
   inputUnit: {
     fontSize: 14,
-    color: Colors.gray500,
+    color: Colors.textSecondary,
     marginRight: 8,
   },
   calculatedShare: {
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     fontSize: 15,
-    color: Colors.gray700,
+    color: Colors.textSecondary,
   },
   previewValue: {
     fontSize: 18,
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },

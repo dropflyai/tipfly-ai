@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -340,12 +340,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 120,
   },
   premiumBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.accentLight,
+    backgroundColor: Colors.accent + '20',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
   premiumBannerText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.gray800,
+    color: Colors.text,
   },
   emptyState: {
     alignItems: 'center',
@@ -446,7 +447,7 @@ const styles = StyleSheet.create({
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.card,
     padding: 20,
     borderRadius: 16,
     borderWidth: 2,
