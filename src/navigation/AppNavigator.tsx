@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppState, AppStateStatus } from 'react-native';
 import { useUserStore } from '../store/userStore';
 import { useAppLockStore } from '../store/appLockStore';
+import { useAnimationStore } from '../store/animationStore';
 import { supabase } from '../services/api/supabase';
 
 // Import screens
@@ -29,12 +30,24 @@ import PoolDetailScreen from '../screens/pools/PoolDetailScreen';
 import ContactSupportScreen from '../screens/settings/ContactSupportScreen';
 import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
 import LockScreen from '../components/LockScreen';
+import SplashAnimation from '../components/SplashAnimation';
+import CelebrationModal from '../components/CelebrationModal';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   const { user, setUser, setLoading, hasCompletedOnboarding } = useUserStore();
   const [initializing, setInitializing] = useState(true);
+
+  // Splash animation state
+  const hasShownSplashThisSession = useAnimationStore((state) => state.hasShownSplashThisSession);
+  const setHasShownSplashThisSession = useAnimationStore((state) => state.setHasShownSplashThisSession);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Goal celebration state
+  const shouldShowGoalCelebration = useAnimationStore((state) => state.shouldShowGoalCelebration);
+  const goalCelebrationData = useAnimationStore((state) => state.goalCelebrationData);
+  const clearGoalCelebration = useAnimationStore((state) => state.clearGoalCelebration);
 
   // App Lock state
   const appState = useRef(AppState.currentState);
@@ -147,9 +160,18 @@ export default function AppNavigator() {
     }
   };
 
+  // Handle splash animation completion
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    setHasShownSplashThisSession(true);
+  };
+
   if (initializing) {
     return null; // Or a loading screen
   }
+
+  // Show splash animation on first launch or cold start (before lock screen)
+  const shouldShowSplashAnimation = showSplash && !hasShownSplashThisSession;
 
   // Show lock screen if enabled and locked
   if (user && hasCompletedOnboarding && isAppLockEnabled && isLocked) {
@@ -157,7 +179,22 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <>
+      {/* Splash Animation Overlay */}
+      {shouldShowSplashAnimation && (
+        <SplashAnimation onAnimationComplete={handleSplashComplete} />
+      )}
+
+      {/* Goal Celebration Modal */}
+      <CelebrationModal
+        visible={shouldShowGoalCelebration}
+        type="goal"
+        title={goalCelebrationData?.title}
+        subtitle={goalCelebrationData?.subtitle}
+        onClose={clearGoalCelebration}
+      />
+
+      <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           // Auth flow - Landing first, then direct to Signup or Login
@@ -306,5 +343,6 @@ export default function AppNavigator() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </>
   );
 }

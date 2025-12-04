@@ -22,13 +22,15 @@ import { AppConfig } from '../../constants/config';
 import { createTipEntry } from '../../services/api/tips';
 import { formatCurrency, getTodayISO } from '../../utils/formatting';
 import { validateTipAmount, validateHours, sanitizeInput, checkAIRateLimit, detectSpamInput } from '../../utils/security';
-import { successHaptic, errorHaptic, selectionHaptic, lightHaptic } from '../../utils/haptics';
+import { successHaptic, errorHaptic, selectionHaptic, lightHaptic, mediumHaptic } from '../../utils/haptics';
 import { parseConversationalEntry, ParsedTipEntry } from '../../services/ai/conversationalEntry';
 import { getCurrentUser } from '../../services/api/supabase';
 import { useUserStore } from '../../store/userStore';
+import { useAnimationStore } from '../../store/animationStore';
 import { Job } from '../../types';
 import { getPrimaryJob } from '../../services/api/jobs';
 import JobSelector from '../../components/common/JobSelector';
+import CelebrationModal from '../../components/CelebrationModal';
 
 interface AddTipScreenProps {
   onClose?: () => void;
@@ -63,9 +65,16 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
   const [scaleAnim] = useState(new Animated.Value(0));
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  // Load primary job on mount
+  // Tip celebration state
+  const incrementTipCount = useAnimationStore((state) => state.incrementTipCount);
+  const loadTipCount = useAnimationStore((state) => state.loadTipCount);
+  const [showTipCelebration, setShowTipCelebration] = useState(false);
+  const [celebrationMilestone, setCelebrationMilestone] = useState<number | null>(null);
+
+  // Load primary job and tip count on mount
   React.useEffect(() => {
     loadPrimaryJob();
+    loadTipCount();
   }, []);
 
   const loadPrimaryJob = async () => {
@@ -252,21 +261,30 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
       setNotes('');
       setDate(new Date());
 
-      // Show success modal with animation
-      setShowSuccessModal(true);
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Check for tip milestone celebration
+      const { shouldCelebrate, milestone } = await incrementTipCount();
+
+      if (shouldCelebrate && milestone) {
+        // Show video celebration for milestone
+        setCelebrationMilestone(milestone);
+        setShowTipCelebration(true);
+      } else {
+        // Show regular success modal with animation
+        setShowSuccessModal(true);
+        Animated.parallel([
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
     } catch (error: any) {
       errorHaptic();
       Alert.alert('Error', error.message || 'Failed to save tip entry');
@@ -296,6 +314,18 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     if (selectedTime) {
       selectionHaptic();
       setClockOut(selectedTime);
+    }
+  };
+
+  const handleCloseTipCelebration = () => {
+    setShowTipCelebration(false);
+    setCelebrationMilestone(null);
+
+    // Navigate or close after celebration
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.navigate('Home' as never);
     }
   };
 
@@ -688,6 +718,19 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
           </>
         )}
       </ScrollView>
+
+      {/* Tip Milestone Celebration Modal */}
+      <CelebrationModal
+        visible={showTipCelebration}
+        type="tip"
+        title={celebrationMilestone === 1 ? 'First Tip Logged!' : `${celebrationMilestone} Tips!`}
+        subtitle={
+          celebrationMilestone === 1
+            ? 'You\'re on your way!'
+            : `You've logged ${celebrationMilestone} tips. Keep it up!`
+        }
+        onClose={handleCloseTipCelebration}
+      />
 
       {/* Success Modal */}
       <Modal
