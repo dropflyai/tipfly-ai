@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, Shadows } from '../../constants/colors';
 
 interface WeeklyTrendChartProps {
   data: number[]; // 7 days of earnings
@@ -12,12 +13,16 @@ export default function WeeklyTrendChart({ data, labels, maxValue }: WeeklyTrend
   const max = maxValue || Math.max(...data, 1);
   const dayLabels = labels || ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+  // Find the best day (highest value)
+  const maxIndex = data.indexOf(Math.max(...data));
+
   return (
     <View style={styles.container}>
       <View style={styles.chartContainer}>
         {data.map((value, index) => {
           const heightPercent = (value / max) * 100;
           const isToday = index === data.length - 1;
+          const isBestDay = index === maxIndex && value > 0;
 
           return (
             <View key={index} style={styles.barWrapper}>
@@ -27,12 +32,18 @@ export default function WeeklyTrendChart({ data, labels, maxValue }: WeeklyTrend
                     styles.bar,
                     {
                       height: `${Math.max(heightPercent, 5)}%`,
-                      backgroundColor: isToday ? Colors.primary : Colors.primaryLight,
                     },
+                    isBestDay && styles.barBest,
+                    isToday && !isBestDay && styles.barToday,
+                    !isToday && !isBestDay && styles.barDefault,
                   ]}
                 />
               </View>
-              <Text style={[styles.label, isToday && styles.labelActive]}>
+              <Text style={[
+                styles.label,
+                isToday && styles.labelActive,
+                isBestDay && styles.labelBest,
+              ]}>
                 {dayLabels[index]}
               </Text>
             </View>
@@ -51,13 +62,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    height: 80,
+    height: 100,
     paddingHorizontal: 4,
   },
   barWrapper: {
     flex: 1,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   barContainer: {
     flex: 1,
@@ -66,17 +77,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bar: {
-    width: '70%',
-    borderRadius: 4,
+    width: '65%',
+    borderRadius: 6,
     minHeight: 4,
   },
+  barDefault: {
+    backgroundColor: Colors.primaryLight,
+  },
+  barToday: {
+    backgroundColor: Colors.primary,
+    ...Shadows.glowBlueSubtle,
+  },
+  barBest: {
+    backgroundColor: Colors.gold,
+    ...Shadows.glowGoldSubtle,
+  },
   label: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
   labelActive: {
     color: Colors.primary,
+    fontWeight: '700',
+  },
+  labelBest: {
+    color: Colors.gold,
     fontWeight: '700',
   },
 });

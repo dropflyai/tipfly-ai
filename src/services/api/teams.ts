@@ -123,24 +123,24 @@ export async function joinWorkplace(request: JoinWorkplaceRequest): Promise<Work
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const inviteCode = request.invite_code.toUpperCase().trim();
+  const inviteCode = request.invite_code.trim();
 
-  // Find workplace by invite code
-  const { data: workplace, error: workplaceError } = await supabase
-    .from('workplaces')
-    .select('*')
-    .eq('invite_code', inviteCode)
-    .single();
+  // Find workplace by invite code using RPC function (bypasses RLS)
+  const { data: lookupResult, error: lookupError } = await supabase
+    .rpc('lookup_workplace_by_invite_code', { code: inviteCode });
 
-  if (workplaceError || !workplace) {
+  if (lookupError || !lookupResult || lookupResult.length === 0) {
     throw new Error('Invalid invite code');
   }
+
+  const workplaceId = lookupResult[0].id;
+  const workplaceName = lookupResult[0].name;
 
   // Check if already a member
   const { data: existingMembership } = await supabase
     .from('workplace_memberships')
     .select('id')
-    .eq('workplace_id', workplace.id)
+    .eq('workplace_id', workplaceId)
     .eq('user_id', user.id)
     .single();
 
@@ -152,12 +152,31 @@ export async function joinWorkplace(request: JoinWorkplaceRequest): Promise<Work
   const { error: membershipError } = await supabase
     .from('workplace_memberships')
     .insert({
-      workplace_id: workplace.id,
+      workplace_id: workplaceId,
       user_id: user.id,
       role: 'member',
     });
 
   if (membershipError) throw membershipError;
+
+  // Fetch the full workplace data now that we're a member
+  const { data: workplace, error: workplaceError } = await supabase
+    .from('workplaces')
+    .select('*')
+    .eq('id', workplaceId)
+    .single();
+
+  if (workplaceError || !workplace) {
+    // Return minimal data if we can't fetch full details
+    return {
+      id: workplaceId,
+      name: workplaceName,
+      invite_code: inviteCode.toUpperCase(),
+      created_by: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
 
   return workplace;
 }
@@ -211,6 +230,8 @@ export async function leaveWorkplace(workplaceId: string): Promise<void> {
  * Get members of a workplace
  */
 export async function getWorkplaceMembers(workplaceId: string): Promise<any[]> {
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
     .from('workplace_memberships')
     .select(`
@@ -225,17 +246,26 @@ export async function getWorkplaceMembers(workplaceId: string): Promise<any[]> {
   if (error) throw error;
 
   // Get user details for each member
-  const membersWithDetails = await Promise.all(
-    (data || []).map(async (membership: any) => {
-      // In a real app, you'd fetch user profile data
-      // For now, we'll just return the membership data
-      return {
-        ...membership,
-        name: 'Team Member', // Placeholder
-        email: '', // Placeholder
-      };
-    })
-  );
+  const membersWithDetails = (data || []).map((membership: any) => {
+    // Check if this is the current user
+    const isCurrentUser = currentUser && membership.user_id === currentUser.id;
+
+    return {
+      ...membership,
+      name: isCurrentUser ? 'You' : 'Team Member',
+      email: isCurrentUser ? currentUser.email : '',
+      isCurrentUser,
+    };
+  });
+
+  // Sort to put current user first, then by role (owner first)
+  membersWithDetails.sort((a, b) => {
+    if (a.isCurrentUser) return -1;
+    if (b.isCurrentUser) return 1;
+    if (a.role === 'owner' && b.role !== 'owner') return -1;
+    if (b.role === 'owner' && a.role !== 'owner') return 1;
+    return 0;
+  });
 
   return membersWithDetails;
 }

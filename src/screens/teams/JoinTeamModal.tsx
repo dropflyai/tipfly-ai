@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Colors, Shadows, GlassStyles } from '../../constants/colors';
 import { joinWorkplace, getUserWorkplaces } from '../../services/api/teams';
 import { WorkplaceWithMembers } from '../../types/teams';
 import { lightHaptic, mediumHaptic } from '../../utils/haptics';
@@ -30,6 +30,7 @@ export default function JoinTeamModal({
 }: JoinTeamModalProps) {
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
 
   const handleClose = () => {
     lightHaptic();
@@ -78,6 +79,8 @@ export default function JoinTeamModal({
     }
   };
 
+  const isCodeComplete = inviteCode.length === 6;
+
   return (
     <Modal
       visible={visible}
@@ -98,11 +101,15 @@ export default function JoinTeamModal({
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.modalHeader}>
+            <View style={styles.headerIconContainer}>
+              <Ionicons name="enter-outline" size={24} color={Colors.primary} />
+            </View>
             <Text style={styles.modalTitle}>Join Team</Text>
             <TouchableOpacity
               onPress={handleClose}
               style={styles.closeButton}
               disabled={loading}
+              activeOpacity={0.7}
             >
               <Ionicons name="close" size={24} color={Colors.textSecondary} />
             </TouchableOpacity>
@@ -111,26 +118,52 @@ export default function JoinTeamModal({
           {/* Input */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Invite Code</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="ABC123"
-              placeholderTextColor={Colors.gray400}
-              value={inviteCode}
-              onChangeText={handleInviteCodeChange}
-              autoFocus
-              autoCapitalize="none"
-              autoCorrect={false}
-              maxLength={6}
-              editable={!loading}
-              returnKeyType="done"
-              onSubmitEditing={handleJoin}
-            />
-            <Text style={styles.charCount}>{inviteCode.length}/6</Text>
+            <View style={[
+              styles.codeInputWrapper,
+              inputFocused && styles.codeInputWrapperFocused,
+              isCodeComplete && styles.codeInputWrapperComplete
+            ]}>
+              <TextInput
+                style={styles.codeInput}
+                placeholder="ABC123"
+                placeholderTextColor={Colors.inputPlaceholder}
+                value={inviteCode}
+                onChangeText={handleInviteCodeChange}
+                autoFocus
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={6}
+                editable={!loading}
+                returnKeyType="done"
+                onSubmitEditing={handleJoin}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                selectionColor={Colors.primary}
+              />
+            </View>
+            <View style={styles.charCountContainer}>
+              <View style={[
+                styles.charCountBadge,
+                isCodeComplete && styles.charCountBadgeComplete
+              ]}>
+                <Text style={[
+                  styles.charCount,
+                  isCodeComplete && styles.charCountComplete
+                ]}>
+                  {inviteCode.length}/6
+                </Text>
+                {isCodeComplete && (
+                  <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+                )}
+              </View>
+            </View>
           </View>
 
           {/* Info */}
           <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color={Colors.info} />
+            <View style={styles.infoIconContainer}>
+              <Ionicons name="information-circle-outline" size={18} color={Colors.primary} />
+            </View>
             <Text style={styles.infoText}>
               Ask your coworker for the 6-digit team code
             </Text>
@@ -138,15 +171,22 @@ export default function JoinTeamModal({
 
           {/* Join Button */}
           <TouchableOpacity
-            style={[styles.joinButton, loading && styles.joinButtonDisabled]}
+            style={[
+              styles.joinButton,
+              !isCodeComplete && styles.joinButtonDisabled,
+              loading && styles.joinButtonDisabled
+            ]}
             onPress={handleJoin}
-            disabled={loading || inviteCode.length !== 6}
+            disabled={loading || !isCodeComplete}
             activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
-              <Text style={styles.joinButtonText}>Join Team</Text>
+              <>
+                <Text style={styles.joinButtonText}>Join Team</Text>
+                <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+              </>
             )}
           </TouchableOpacity>
         </View>
@@ -167,98 +207,135 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    backgroundColor: Colors.card,
-    borderRadius: 20,
+    ...GlassStyles.modal,
     padding: 24,
     width: '85%',
     maxWidth: 400,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    gap: 12,
+  },
+  headerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 24,
+    flex: 1,
+    fontSize: 22,
     fontWeight: 'bold',
     color: Colors.text,
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   inputContainer: {
     marginBottom: 20,
-    position: 'relative',
+    gap: 8,
   },
   label: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginLeft: 4,
   },
-  input: {
-    backgroundColor: Colors.backgroundTertiary,
+  codeInputWrapper: {
+    backgroundColor: 'rgba(26, 35, 50, 0.8)',
     borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 12,
+    borderColor: 'rgba(0, 168, 232, 0.3)',
+    borderRadius: 16,
     padding: 16,
-    fontSize: 24,
+  },
+  codeInputWrapperFocused: {
+    borderColor: Colors.primary,
+    ...Shadows.glowBlueSubtle,
+  },
+  codeInputWrapperComplete: {
+    borderColor: Colors.success,
+    backgroundColor: 'rgba(52, 199, 89, 0.08)',
+  },
+  codeInput: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: Colors.text,
     textAlign: 'center',
-    letterSpacing: 4,
+    letterSpacing: 8,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
+  charCountContainer: {
+    alignItems: 'flex-end',
+  },
+  charCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  charCountBadgeComplete: {
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+  },
   charCount: {
-    position: 'absolute',
-    right: 12,
-    bottom: -20,
     fontSize: 12,
     color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  charCountComplete: {
+    color: Colors.success,
   },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundTertiary,
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 168, 232, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 168, 232, 0.2)',
+    padding: 14,
+    borderRadius: 12,
     marginBottom: 24,
-    marginTop: 8,
-    gap: 8,
+    gap: 12,
+  },
+  infoIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   joinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.primary,
     paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 14,
+    gap: 8,
+    ...Shadows.buttonBlue,
   },
   joinButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   joinButtonText: {
     color: Colors.white,

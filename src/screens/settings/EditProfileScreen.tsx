@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Colors, Shadows } from '../../constants/colors';
 import { useUserStore } from '../../store/userStore';
 import { supabase } from '../../services/api/supabase';
 import { AppConfig } from '../../constants/config';
@@ -26,6 +26,7 @@ export default function EditProfileScreen() {
   const [jobTitle, setJobTitle] = useState(user?.job_title || '');
   const [saving, setSaving] = useState(false);
   const [showJobPicker, setShowJobPicker] = useState(false);
+  const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
 
   const jobTypes = AppConfig.JOB_TYPES;
 
@@ -139,6 +140,46 @@ export default function EditProfileScreen() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'No email address found for your account');
+      return;
+    }
+
+    Alert.alert(
+      'Change Password',
+      `We'll send a password reset link to:\n\n${email}\n\nContinue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Link',
+          onPress: async () => {
+            try {
+              setSendingPasswordReset(true);
+
+              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: 'tipfly://reset-password',
+              });
+
+              if (error) throw error;
+
+              Alert.alert(
+                'Email Sent!',
+                'Check your inbox for the password reset link. The link will expire in 1 hour.',
+                [{ text: 'OK' }]
+              );
+            } catch (error: any) {
+              console.error('Error sending password reset:', error);
+              Alert.alert('Error', error.message || 'Failed to send password reset email');
+            } finally {
+              setSendingPasswordReset(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const selectedJob = jobTypes.find(j => j.id === jobTitle);
 
   return (
@@ -172,7 +213,7 @@ export default function EditProfileScreen() {
                 value={fullName}
                 onChangeText={setFullName}
                 placeholder="Enter your name"
-                placeholderTextColor={Colors.gray400}
+                placeholderTextColor={Colors.inputPlaceholder}
                 autoCapitalize="words"
               />
             </View>
@@ -187,7 +228,7 @@ export default function EditProfileScreen() {
                 style={[styles.input, styles.inputDisabledText]}
                 value={email}
                 editable={false}
-                placeholderTextColor={Colors.gray400}
+                placeholderTextColor={Colors.inputPlaceholder}
               />
               <Ionicons name="lock-closed-outline" size={16} color={Colors.textSecondary} />
             </View>
@@ -253,6 +294,27 @@ export default function EditProfileScreen() {
             </View>
           )}
 
+          {/* Change Password */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Password</Text>
+            <TouchableOpacity
+              style={[styles.changePasswordButton, sendingPasswordReset && styles.buttonDisabled]}
+              onPress={handleChangePassword}
+              disabled={sendingPasswordReset}
+            >
+              <View style={styles.changePasswordLeft}>
+                <Ionicons name="key-outline" size={20} color={Colors.textSecondary} />
+                <Text style={styles.changePasswordText}>Change Password</Text>
+              </View>
+              {sendingPasswordReset ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.helpText}>We'll send a reset link to your email</Text>
+          </View>
+
           {/* Save Button */}
           <TouchableOpacity
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -305,11 +367,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    ...Shadows.glowBlue,
   },
   profileIconText: {
     fontSize: 40,
@@ -327,7 +385,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: Colors.white,
+    borderColor: Colors.backgroundDark,
+    ...Shadows.glowGoldSubtle,
   },
   form: {
     gap: 20,
@@ -344,20 +403,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundSecondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray200,
+    borderColor: Colors.inputBorder,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   inputDisabled: {
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundTertiary,
+    opacity: 0.7,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: Colors.text,
+    color: Colors.inputText,
   },
   inputDisabledText: {
     color: Colors.textSecondary,
@@ -371,10 +431,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundSecondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray200,
+    borderColor: Colors.inputBorder,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -389,10 +449,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   jobPicker: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundSecondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray200,
+    borderColor: Colors.inputBorder,
     overflow: 'hidden',
     marginTop: -12,
   },
@@ -402,10 +462,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray100,
+    borderBottomColor: Colors.border,
   },
   jobOptionSelected: {
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: Colors.primary + '20',
   },
   jobOptionLeft: {
     flexDirection: 'row',
@@ -421,6 +481,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.primary,
   },
+  changePasswordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.inputBorder,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  changePasswordLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  changePasswordText: {
+    fontSize: 16,
+    color: Colors.text,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -429,12 +512,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
     marginTop: 8,
+    ...Shadows.buttonBlue,
   },
   saveButtonDisabled: {
     opacity: 0.6,
@@ -447,9 +526,11 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     gap: 10,
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.backgroundSecondary,
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   infoText: {
     flex: 1,

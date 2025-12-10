@@ -1,11 +1,12 @@
 // Bottom tab navigation for main app screens
-import React, { useState } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Platform, StyleSheet, TouchableOpacity, View, Modal, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
+import { Colors, Shadows } from '../constants/colors';
 import { BlurView } from 'expo-blur';
 import { mediumHaptic } from '../utils/haptics';
+import { usePendingPoolsStore } from '../store/pendingPoolsStore';
 
 // Import screens
 import DashboardScreen from '../screens/main/DashboardScreen';
@@ -18,6 +19,13 @@ const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
   const [showAddTipModal, setShowAddTipModal] = useState(false);
+  const pendingCount = usePendingPoolsStore((state) => state.pendingCount);
+  const fetchPendingPools = usePendingPoolsStore((state) => state.fetchPendingPools);
+
+  // Fetch pending pools on mount
+  useEffect(() => {
+    fetchPendingPools();
+  }, []);
 
   const handleFABPress = () => {
     mediumHaptic();
@@ -35,7 +43,7 @@ export default function MainTabNavigator() {
             position: 'absolute',
             backgroundColor: Platform.OS === 'ios' ? 'transparent' : Colors.backgroundSecondary,
             borderTopWidth: 1,
-            borderTopColor: Colors.border,
+            borderTopColor: Colors.borderBlue,
             elevation: 0,
             height: 70,
             paddingBottom: Platform.OS === 'ios' ? 20 : 12,
@@ -65,8 +73,10 @@ export default function MainTabNavigator() {
           component={DashboardScreen}
           options={{
             title: 'Home',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home" size={size} color={color} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <View style={focused ? styles.activeIconContainer : undefined}>
+                <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+              </View>
             ),
           }}
         />
@@ -75,8 +85,10 @@ export default function MainTabNavigator() {
           component={StatsScreen}
           options={{
             title: 'Analytics',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="analytics" size={size} color={color} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <View style={focused ? styles.activeIconContainer : undefined}>
+                <Ionicons name={focused ? "analytics" : "analytics-outline"} size={size} color={color} />
+              </View>
             ),
           }}
         />
@@ -85,8 +97,12 @@ export default function MainTabNavigator() {
           component={TeamsScreen}
           options={{
             title: 'Teams',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="people" size={size} color={color} />
+            tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+            tabBarBadgeStyle: pendingCount > 0 ? styles.badge : undefined,
+            tabBarIcon: ({ color, size, focused }) => (
+              <View style={focused ? styles.activeIconContainer : undefined}>
+                <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
+              </View>
             ),
           }}
         />
@@ -95,14 +111,16 @@ export default function MainTabNavigator() {
           component={SettingsScreen}
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="person" size={size} color={color} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <View style={focused ? styles.activeIconContainer : undefined}>
+                <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+              </View>
             ),
           }}
         />
       </Tab.Navigator>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Gold for "add money" */}
       <TouchableOpacity
         style={styles.fab}
         onPress={handleFABPress}
@@ -132,13 +150,20 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
+    ...Shadows.buttonGold,
+  },
+  activeIconContainer: {
+    // Subtle glow effect for active tab
+    ...Shadows.glowBlueSubtle,
+  },
+  badge: {
+    backgroundColor: Colors.error,
+    fontSize: 11,
+    fontWeight: '700',
+    minWidth: 18,
+    height: 18,
   },
 });

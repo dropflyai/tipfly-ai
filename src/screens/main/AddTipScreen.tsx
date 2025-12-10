@@ -241,6 +241,8 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     try {
       await createTipEntry({
         date: date.toISOString().split('T')[0],
+        clock_in: clockIn.toISOString(),
+        clock_out: clockOut.toISOString(),
         hours_worked: hours,
         tips_earned: tips,
         shift_type: shiftType as any,

@@ -11,8 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Colors, Shadows, GlassStyles } from '../../constants/colors';
 import { createWorkplace } from '../../services/api/teams';
 import { WorkplaceWithMembers } from '../../types/teams';
 import { lightHaptic, mediumHaptic } from '../../utils/haptics';
@@ -30,6 +31,7 @@ export default function CreateTeamModal({
 }: CreateTeamModalProps) {
   const [teamName, setTeamName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
 
   const handleClose = () => {
     lightHaptic();
@@ -91,11 +93,15 @@ export default function CreateTeamModal({
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.modalHeader}>
+            <View style={styles.headerIconContainer}>
+              <Ionicons name="people-outline" size={24} color={Colors.primary} />
+            </View>
             <Text style={styles.modalTitle}>Create Team</Text>
             <TouchableOpacity
               onPress={handleClose}
               style={styles.closeButton}
               disabled={loading}
+              activeOpacity={0.7}
             >
               <Ionicons name="close" size={24} color={Colors.textSecondary} />
             </TouchableOpacity>
@@ -104,23 +110,38 @@ export default function CreateTeamModal({
           {/* Input */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Team Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Joe's Diner"
-              placeholderTextColor={Colors.gray400}
-              value={teamName}
-              onChangeText={setTeamName}
-              autoFocus
-              maxLength={100}
-              editable={!loading}
-              returnKeyType="done"
-              onSubmitEditing={handleCreate}
-            />
+            <View style={[
+              styles.inputWrapper,
+              inputFocused && styles.inputWrapperFocused
+            ]}>
+              <Ionicons
+                name="briefcase-outline"
+                size={20}
+                color={inputFocused ? Colors.primary : Colors.textSecondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Joe's Diner"
+                placeholderTextColor={Colors.inputPlaceholder}
+                value={teamName}
+                onChangeText={setTeamName}
+                autoFocus
+                maxLength={100}
+                editable={!loading}
+                returnKeyType="done"
+                onSubmitEditing={handleCreate}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                selectionColor={Colors.primary}
+              />
+            </View>
           </View>
 
           {/* Info */}
           <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color={Colors.info} />
+            <View style={styles.infoIconContainer}>
+              <Ionicons name="key-outline" size={18} color={Colors.primary} />
+            </View>
             <Text style={styles.infoText}>
               You'll get a 6-digit code to share with teammates
             </Text>
@@ -136,7 +157,10 @@ export default function CreateTeamModal({
             {loading ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
-              <Text style={styles.createButtonText}>Create Team</Text>
+              <>
+                <Text style={styles.createButtonText}>Create Team</Text>
+                <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+              </>
             )}
           </TouchableOpacity>
         </View>
@@ -157,77 +181,102 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    backgroundColor: Colors.card,
-    borderRadius: 20,
+    ...GlassStyles.modal,
     padding: 24,
     width: '85%',
     maxWidth: 400,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    gap: 12,
+  },
+  headerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 24,
+    flex: 1,
+    fontSize: 22,
     fontWeight: 'bold',
     color: Colors.text,
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   inputContainer: {
     marginBottom: 20,
+    gap: 8,
   },
   label: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginLeft: 4,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...GlassStyles.input,
+    paddingHorizontal: 16,
+    height: 56,
+    gap: 12,
+  },
+  inputWrapperFocused: {
+    ...GlassStyles.inputFocus,
   },
   input: {
-    backgroundColor: Colors.backgroundTertiary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 16,
+    flex: 1,
     fontSize: 16,
     color: Colors.text,
   },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundTertiary,
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 168, 232, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 168, 232, 0.2)',
+    padding: 14,
+    borderRadius: 12,
     marginBottom: 24,
-    gap: 8,
+    gap: 12,
+  },
+  infoIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.primary,
     paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 14,
+    gap: 8,
+    ...Shadows.buttonBlue,
   },
   createButtonDisabled: {
     opacity: 0.6,

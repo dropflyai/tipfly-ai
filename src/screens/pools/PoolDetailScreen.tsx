@@ -20,6 +20,7 @@ import { getPoolDetails, confirmPoolShare, cancelPool } from '../../services/api
 import { getCurrentUser } from '../../services/api/supabase';
 import { formatCurrency, formatDate } from '../../utils/formatting';
 import { successHaptic, errorHaptic, lightHaptic } from '../../utils/haptics';
+import { usePendingPoolsStore } from '../../store/pendingPoolsStore';
 
 type RouteParams = {
   PoolDetail: {
@@ -41,6 +42,7 @@ export default function PoolDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const decrementPendingCount = usePendingPoolsStore((state) => state.decrementCount);
 
   useEffect(() => {
     loadCurrentUser();
@@ -102,6 +104,9 @@ export default function PoolDetailScreen() {
                 pool_id: pool.id,
                 participant_id: myParticipation.id,
               });
+
+              // Update pending pools count
+              decrementPendingCount();
 
               successHaptic();
               Alert.alert(

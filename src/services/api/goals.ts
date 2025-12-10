@@ -198,7 +198,7 @@ export const updateGoalProgress = async (): Promise<void> => {
       // Get tips in this goal's date range
       const { data: tips, error: tipsError } = await supabase
         .from('tip_entries')
-        .select('amount')
+        .select('tips_earned')
         .eq('user_id', user.id)
         .gte('date', startDate.toISOString())
         .lt('date', endDate.toISOString());
@@ -206,7 +206,7 @@ export const updateGoalProgress = async (): Promise<void> => {
       if (tipsError) throw tipsError;
 
       // Calculate total
-      const total = tips?.reduce((sum, tip) => sum + (tip.amount || 0), 0) || 0;
+      const total = tips?.reduce((sum, tip) => sum + (tip.tips_earned || 0), 0) || 0;
 
       // Determine status
       const now = new Date();

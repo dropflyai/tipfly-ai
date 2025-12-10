@@ -30,9 +30,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your-apple-id@email.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-team-id"
+        "appleId": "dropflyai@gmail.com",
+        "ascAppId": "6755552157",
+        "appleTeamId": "G46B7YC46C"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",

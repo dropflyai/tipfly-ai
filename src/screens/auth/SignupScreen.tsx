@@ -15,7 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
-import { Colors } from '../../constants/colors';
+import { Colors, GradientColors, Shadows, GlassStyles } from '../../constants/colors';
 import { supabase } from '../../services/api/supabase';
 import { validateEmail, validatePassword, sanitizeInput } from '../../utils/security';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +31,9 @@ export default function SignupScreen({ navigation }: Props) {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const handleSignup = async () => {
     if (!email || !password || !fullName) {
@@ -123,7 +126,7 @@ export default function SignupScreen({ navigation }: Props) {
 
   return (
     <LinearGradient
-      colors={['#0F172A', '#1E293B', '#0F172A']}
+      colors={['#0A0F1A', '#1A2332', '#0A0F1A']}
       style={styles.container}
     >
       <StatusBar barStyle="light-content" />
@@ -145,7 +148,7 @@ export default function SignupScreen({ navigation }: Props) {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Ionicons name="person-add-outline" size={40} color="#10B981" />
+              <Ionicons name="person-add-outline" size={40} color={Colors.primary} />
             </View>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Start tracking your tips today</Text>
@@ -155,8 +158,11 @@ export default function SignupScreen({ navigation }: Props) {
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full Name</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color={Colors.textSecondary} />
+              <View style={[
+                styles.inputContainer,
+                nameFocused && styles.inputContainerFocused
+              ]}>
+                <Ionicons name="person-outline" size={20} color={nameFocused ? Colors.primary : Colors.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your name"
@@ -165,14 +171,19 @@ export default function SignupScreen({ navigation }: Props) {
                   onChangeText={setFullName}
                   autoCapitalize="words"
                   selectionColor={Colors.primary}
+                  onFocus={() => setNameFocused(true)}
+                  onBlur={() => setNameFocused(false)}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color={Colors.textSecondary} />
+              <View style={[
+                styles.inputContainer,
+                emailFocused && styles.inputContainerFocused
+              ]}>
+                <Ionicons name="mail-outline" size={20} color={emailFocused ? Colors.primary : Colors.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your email"
@@ -183,14 +194,19 @@ export default function SignupScreen({ navigation }: Props) {
                   autoCapitalize="none"
                   autoCorrect={false}
                   selectionColor={Colors.primary}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} />
+              <View style={[
+                styles.inputContainer,
+                passwordFocused && styles.inputContainerFocused
+              ]}>
+                <Ionicons name="lock-closed-outline" size={20} color={passwordFocused ? Colors.primary : Colors.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Min 6 characters"
@@ -200,6 +216,8 @@ export default function SignupScreen({ navigation }: Props) {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   selectionColor={Colors.primary}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons
@@ -218,7 +236,7 @@ export default function SignupScreen({ navigation }: Props) {
               activeOpacity={0.9}
             >
               <LinearGradient
-                colors={['#10B981', '#059669']}
+                colors={GradientColors.primary}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.signupButtonGradient}
@@ -278,10 +296,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+    ...Shadows.glowBlueSubtle,
   },
   title: {
     fontSize: 32,
@@ -309,13 +328,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 14,
+    ...GlassStyles.input,
     paddingHorizontal: 16,
     height: 56,
     gap: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  },
+  inputContainerFocused: {
+    ...GlassStyles.inputFocus,
   },
   input: {
     flex: 1,
@@ -326,11 +345,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     marginTop: 8,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    ...Shadows.buttonBlue,
   },
   signupButtonGradient: {
     flexDirection: 'row',

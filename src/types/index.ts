@@ -1,6 +1,7 @@
 // TipFly AI Type Definitions
 
 export type RootStackParamList = {
+  Landing: undefined;
   Welcome: undefined;
   JobSelection: undefined;
   Login: undefined;
@@ -59,6 +60,8 @@ export type TipEntry = {
   user_id: string;
   job_id?: string;
   date: string;
+  clock_in?: string;  // ISO timestamp for shift start
+  clock_out?: string; // ISO timestamp for shift end
   hours_worked: number;
   tips_earned: number;
   shift_type: 'day' | 'night' | 'double' | 'other';
@@ -69,13 +72,14 @@ export type TipEntry = {
 export type Goal = {
   id: string;
   user_id: string;
-  type: 'daily' | 'weekly' | 'monthly';
+  goal_type: 'daily' | 'weekly' | 'monthly';
   target_amount: number;
   current_amount: number;
   start_date: string;
   end_date: string;
   status: 'active' | 'completed' | 'failed';
   created_at: string;
+  updated_at: string;
 };
 
 export type Deduction = {

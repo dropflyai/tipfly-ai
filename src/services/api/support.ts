@@ -100,6 +100,11 @@ const sendDiscordNotification = async (ticket: SupportTicket) => {
   }
 
   try {
+    // Create mailto link for easy reply
+    const mailtoLink = ticket.user_email
+      ? `mailto:${ticket.user_email}?subject=Re: ${encodeURIComponent(ticket.subject)}`
+      : 'N/A';
+
     const embed = {
       title: '🎫 New Support Ticket',
       color: 0x10b981, // Green color
@@ -139,6 +144,11 @@ const sendDiscordNotification = async (ticket: SupportTicket) => {
         {
           name: '🆔 Ticket ID',
           value: ticket.id,
+          inline: false,
+        },
+        {
+          name: '📮 Reply',
+          value: ticket.user_email ? `[Click to Reply](${mailtoLink})` : 'No email provided',
           inline: false,
         },
       ],

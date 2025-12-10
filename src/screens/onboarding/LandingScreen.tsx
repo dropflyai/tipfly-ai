@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, GradientColors } from '../../constants/colors';
+import { Colors, GradientColors, Shadows } from '../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { mediumHaptic } from '../../utils/haptics';
 
@@ -66,7 +66,7 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
 
   return (
     <LinearGradient
-      colors={['#0F172A', '#1E293B', '#0F172A']}
+      colors={['#0A0F1A', '#1A2332', '#0A0F1A']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -115,7 +115,7 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
             />
           </View>
           <View style={styles.trendLine}>
-            <Ionicons name="trending-up" size={32} color="#10B981" />
+            <Ionicons name="trending-up" size={32} color={Colors.primary} />
           </View>
         </View>
 
@@ -132,19 +132,19 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
         <View style={styles.valueProps}>
           <View style={styles.valueProp}>
             <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={14} color="#0F172A" />
+              <Ionicons name="checkmark" size={14} color={Colors.background} />
             </View>
             <Text style={styles.valuePropText}>AI-powered predictions</Text>
           </View>
           <View style={styles.valueProp}>
             <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={14} color="#0F172A" />
+              <Ionicons name="checkmark" size={14} color={Colors.background} />
             </View>
             <Text style={styles.valuePropText}>Track tips in seconds</Text>
           </View>
           <View style={styles.valueProp}>
             <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={14} color="#0F172A" />
+              <Ionicons name="checkmark" size={14} color={Colors.background} />
             </View>
             <Text style={styles.valuePropText}>Team tip pooling</Text>
           </View>
@@ -160,7 +160,7 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={['#10B981', '#059669']}
+            colors={GradientColors.primary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.primaryButtonGradient}
@@ -216,19 +216,20 @@ const styles = StyleSheet.create({
   },
   bar1: {
     height: 40,
-    backgroundColor: 'rgba(16, 185, 129, 0.3)',
+    backgroundColor: 'rgba(0, 168, 232, 0.3)',
   },
   bar2: {
     height: 55,
-    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+    backgroundColor: 'rgba(0, 168, 232, 0.5)',
   },
   bar3: {
     height: 70,
-    backgroundColor: 'rgba(16, 185, 129, 0.7)',
+    backgroundColor: 'rgba(0, 168, 232, 0.7)',
   },
   bar4: {
     height: 95,
-    backgroundColor: '#10B981',
+    backgroundColor: Colors.primary,
+    ...Shadows.glowBlueSubtle,
   },
   trendLine: {
     position: 'absolute',
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
   headlineAccent: {
     fontSize: 42,
     fontWeight: '800',
-    color: '#10B981',
+    color: Colors.primary,
     textAlign: 'center',
     letterSpacing: -1,
     marginBottom: 20,
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#10B981',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -287,11 +288,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    ...Shadows.buttonBlue,
   },
   primaryButtonGradient: {
     flexDirection: 'row',

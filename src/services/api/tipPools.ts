@@ -257,16 +257,18 @@ export async function confirmPoolShare(request: ConfirmPoolShareRequest): Promis
   // Create a tip entry for this confirmed share
   const { data: poolData } = await supabase
     .from('tip_pools')
-    .select('date, shift_type')
+    .select('date')
     .eq('id', request.pool_id)
     .single();
 
   if (poolData) {
+    // Note: Pool shift_type values (breakfast/lunch/dinner/late_night) don't match
+    // tip_entries shift_type constraint (day/night/double/other), so we use 'other'
     await createTipEntry({
       date: poolData.date,
       hours_worked: participant.hours_worked || 0,
       tips_earned: parseFloat(participant.share_amount),
-      shift_type: poolData.shift_type,
+      shift_type: 'other',
       notes: `Pool share from team`,
     });
   }

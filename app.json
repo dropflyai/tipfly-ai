@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tipflyai.app",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan receipts for automatic tip entry.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and upload receipt images.",

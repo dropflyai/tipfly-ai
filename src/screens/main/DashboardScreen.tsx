@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, GradientColors } from '../../constants/colors';
+import { BlurView } from 'expo-blur';
+import { Colors, GradientColors, Shadows, GlassStyles } from '../../constants/colors';
 import { DashboardStats, TipEntry } from '../../types';
 import { getTodaysTips, getWeeklyTips, getMonthlyTips, getTipEntriesByDateRange, getTipEntries } from '../../services/api/tips';
 import { calculateDashboardStats } from '../../utils/calculations';
@@ -29,6 +30,7 @@ import RecentEntriesSection from '../../components/cards/RecentEntriesSection';
 import GoalsSection from '../../components/cards/GoalsSection';
 import ShiftPredictionCard from '../../components/cards/ShiftPredictionCard';
 import DailyInsightCard from '../../components/cards/DailyInsightCard';
+import PendingPoolsAlert from '../../components/cards/PendingPoolsAlert';
 import { generateShiftPrediction, ShiftPrediction } from '../../services/ai/predictions';
 import { generateDailyInsight, DailyInsight } from '../../services/ai/insights';
 
@@ -221,42 +223,53 @@ export default function DashboardScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.primary}
+            />
           }
         >
           {/* Email Verification Banner */}
           <EmailVerificationBanner />
 
+          {/* Pending Pools Alert */}
+          <PendingPoolsAlert />
 
-          {/* Today's Earnings Card */}
+          {/* Today's Earnings Card - Hero with Blue Gradient */}
           <LinearGradient
-          colors={GradientColors.hero}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroCard}
-        >
-          <Text style={styles.heroLabel}>Today's Tips</Text>
-          <Text style={styles.heroAmount}>{formatCurrency(stats?.today.tips || 0)}</Text>
-          <View style={styles.heroStats}>
-            <Text style={styles.heroStat}>
-              {formatHours(stats?.today.hours || 0)} worked
-            </Text>
-            <Text style={styles.heroDot}>•</Text>
-            <Text style={styles.heroStat}>
-              {formatHourlyRate(stats?.today.hourly_rate || 0)}
-            </Text>
-          </View>
-          {stats && stats.today.vs_yesterday !== 0 && (
-            <View style={[
-              styles.changeIndicator,
-              stats.today.vs_yesterday > 0 ? styles.changePositive : styles.changeNegative
-            ]}>
-              <Text style={styles.changeText}>
-                {formatChange(stats.today.vs_yesterday)} vs yesterday
+            colors={GradientColors.hero}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            <Text style={styles.heroLabel}>Today's Tips</Text>
+            <Text style={styles.heroAmount}>{formatCurrency(stats?.today.tips || 0)}</Text>
+            <View style={styles.heroStats}>
+              <Text style={styles.heroStat}>
+                {formatHours(stats?.today.hours || 0)} worked
+              </Text>
+              <Text style={styles.heroDot}>•</Text>
+              <Text style={styles.heroStat}>
+                {formatHourlyRate(stats?.today.hourly_rate || 0)}
               </Text>
             </View>
-          )}
-        </LinearGradient>
+            {stats && stats.today.vs_yesterday !== 0 && (
+              <View style={[
+                styles.changeIndicator,
+                stats.today.vs_yesterday > 0 ? styles.changePositive : styles.changeNegative
+              ]}>
+                <Ionicons
+                  name={stats.today.vs_yesterday > 0 ? "trending-up" : "trending-down"}
+                  size={14}
+                  color={Colors.white}
+                />
+                <Text style={styles.changeText}>
+                  {formatChange(stats.today.vs_yesterday)} vs yesterday
+                </Text>
+              </View>
+            )}
+          </LinearGradient>
 
           {/* AI Shift Prediction */}
           <View style={styles.section}>
@@ -278,10 +291,13 @@ export default function DashboardScreen() {
             />
           </View>
 
-          {/* Weekly Trend Chart */}
-          <View style={styles.chartCard}>
+          {/* Weekly Trend Chart - Glass Card */}
+          <View style={styles.glassCard}>
             <View style={styles.chartHeader}>
-              <Text style={styles.chartTitle}>This Week</Text>
+              <View style={styles.chartTitleRow}>
+                <Ionicons name="bar-chart" size={20} color={Colors.primary} />
+                <Text style={styles.chartTitle}>This Week</Text>
+              </View>
               <Text style={styles.chartSubtitle}>{formatCurrency(stats?.week.tips || 0)}</Text>
             </View>
             <WeeklyTrendChart data={weeklyChartData} />
@@ -317,9 +333,9 @@ export default function DashboardScreen() {
             />
           </View>
 
-          {/* This Month Summary Card */}
+          {/* This Month Summary Card - Glass Style */}
           <View style={styles.section}>
-            <View style={styles.monthCard}>
+            <View style={styles.glassCard}>
               <View style={styles.monthHeader}>
                 <Ionicons name="calendar" size={24} color={Colors.primary} />
                 <Text style={styles.monthTitle}>This Month</Text>
@@ -330,6 +346,7 @@ export default function DashboardScreen() {
                   <Text style={styles.monthStatLabel}>Hours</Text>
                   <Text style={styles.monthStatValue}>{formatHours(stats?.month.hours || 0)}</Text>
                 </View>
+                <View style={styles.monthStatDivider} />
                 <View style={styles.monthStat}>
                   <Text style={styles.monthStatLabel}>Avg Rate</Text>
                   <Text style={styles.monthStatValue}>{formatHourlyRate(stats?.month.hourly_rate || 0)}</Text>
@@ -338,7 +355,7 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          {/* Upgrade Prompt for Free Users */}
+          {/* Upgrade Prompt for Free Users - Gold Accent */}
           {!isPremium && (
             <TouchableOpacity
               style={styles.upgradeCard}
@@ -346,15 +363,25 @@ export default function DashboardScreen() {
                 mediumHaptic();
                 navigation.navigate('Upgrade' as never);
               }}
+              activeOpacity={0.9}
             >
-              <Text style={styles.upgradeEmoji}>✨</Text>
-              <View style={styles.upgradeContent}>
-                <Text style={styles.upgradeTitle}>Upgrade to Premium</Text>
-                <Text style={styles.upgradeSubtitle}>
-                  Unlimited history, receipt scanning, tax tracking & more
-                </Text>
-              </View>
-              <Text style={styles.upgradeArrow}>→</Text>
+              <LinearGradient
+                colors={GradientColors.gold}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.upgradeGradient}
+              >
+                <View style={styles.upgradeIconContainer}>
+                  <Ionicons name="star" size={28} color={Colors.white} />
+                </View>
+                <View style={styles.upgradeContent}>
+                  <Text style={styles.upgradeTitle}>Upgrade to Premium</Text>
+                  <Text style={styles.upgradeSubtitle}>
+                    Unlimited history, AI insights, goals & more
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color={Colors.white} />
+              </LinearGradient>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -366,13 +393,13 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundDark,
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundDark,
+    backgroundColor: Colors.background,
   },
   scrollView: {
     flex: 1,
@@ -382,15 +409,12 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingBottom: 120,
   },
+  // Hero Card - Main earnings display with blue gradient
   heroCard: {
     borderRadius: 24,
     padding: 28,
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
+    ...Shadows.buttonBlue,
     marginBottom: 4,
   },
   heroLabel: {
@@ -398,6 +422,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
     opacity: 0.9,
     marginBottom: 8,
+    fontWeight: '500',
   },
   heroAmount: {
     fontSize: 56,
@@ -423,117 +448,50 @@ const styles = StyleSheet.create({
   },
   changeIndicator: {
     marginTop: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   changePositive: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   changeNegative: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
   },
   changeText: {
     fontSize: 14,
     color: Colors.white,
     fontWeight: '600',
   },
-  card: {
-    backgroundColor: Colors.card,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardTitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginBottom: 8,
-  },
-  cardAmount: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: Colors.text,
-    marginBottom: 16,
-    letterSpacing: -0.5,
-  },
-  cardStats: {
-    gap: 12,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-  },
-  statValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  upgradeCard: {
-    backgroundColor: Colors.accent,
-    borderRadius: 16,
+  // Glass Card Style
+  glassCard: {
+    ...GlassStyles.card,
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
   },
-  upgradeEmoji: {
-    fontSize: 32,
-  },
-  upgradeContent: {
-    flex: 1,
-  },
-  upgradeTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  upgradeSubtitle: {
-    fontSize: 14,
-    color: Colors.white,
-    opacity: 0.9,
-  },
-  upgradeArrow: {
-    fontSize: 24,
-    color: Colors.white,
-  },
-  section: {
-    gap: 8,
-  },
-  chartCard: {
-    backgroundColor: Colors.card,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
+  // Chart styles
   chartHeader: {
     marginBottom: 16,
+  },
+  chartTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
   chartTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.textSecondary,
-    marginBottom: 4,
   },
   chartSubtitle: {
     fontSize: 28,
     fontWeight: '700',
     color: Colors.text,
   },
-  monthCard: {
-    backgroundColor: Colors.card,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
+  // Month card styles
   monthHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -554,19 +512,64 @@ const styles = StyleSheet.create({
   },
   monthStats: {
     flexDirection: 'row',
-    gap: 24,
+    alignItems: 'center',
   },
   monthStat: {
     flex: 1,
+  },
+  monthStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Colors.border,
+    marginHorizontal: 16,
   },
   monthStatLabel: {
     fontSize: 13,
     color: Colors.textSecondary,
     marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   monthStatValue: {
     fontSize: 18,
     fontWeight: '700',
     color: Colors.text,
+  },
+  // Upgrade card - Gold gradient
+  upgradeCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Shadows.buttonGold,
+  },
+  upgradeGradient: {
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  upgradeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upgradeContent: {
+    flex: 1,
+  },
+  upgradeTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.white,
+    marginBottom: 4,
+  },
+  upgradeSubtitle: {
+    fontSize: 14,
+    color: Colors.white,
+    opacity: 0.9,
+  },
+  section: {
+    gap: 8,
   },
 });
