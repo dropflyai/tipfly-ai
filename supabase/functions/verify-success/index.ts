@@ -1,4 +1,4 @@
-// Email Verification Success Page
+// Email Verification Success Page - TipFly AI
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 serve(async (req) => {
@@ -12,7 +12,7 @@ serve(async (req) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Verified - TipGenius</title>
+  <title>Email Verified - TipFly AI</title>
   <style>
     * {
       margin: 0;
@@ -22,7 +22,7 @@ serve(async (req) => {
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #0A0E27 0%, #1A1F3A 100%);
+      background: linear-gradient(135deg, #0A0F1A 0%, #1A2332 100%);
       color: #FFFFFF;
       min-height: 100vh;
       display: flex;
@@ -34,33 +34,33 @@ serve(async (req) => {
     .container {
       max-width: 500px;
       width: 100%;
-      background: rgba(26, 31, 58, 0.8);
+      background: rgba(26, 35, 50, 0.9);
       backdrop-filter: blur(10px);
       border-radius: 24px;
       padding: 48px 32px;
       text-align: center;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(0, 168, 232, 0.2);
     }
 
     .icon {
       width: 80px;
       height: 80px;
-      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      background: linear-gradient(135deg, #00A8E8 0%, #0077B6 100%);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 24px;
       font-size: 40px;
-      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 4px 16px rgba(0, 168, 232, 0.4);
     }
 
     h1 {
       font-size: 32px;
       font-weight: 700;
       margin-bottom: 16px;
-      background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
+      background: linear-gradient(135deg, #00A8E8 0%, #48CAE4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -76,14 +76,14 @@ serve(async (req) => {
     .opening-text {
       font-size: 18px;
       font-weight: 600;
-      color: #6366F1;
+      color: #00A8E8;
       margin-bottom: 16px;
     }
 
     .button {
       display: inline-block;
       padding: 16px 32px;
-      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      background: linear-gradient(135deg, #00A8E8 0%, #0077B6 100%);
       color: #FFFFFF;
       text-decoration: none;
       font-size: 16px;
@@ -91,23 +91,23 @@ serve(async (req) => {
       border-radius: 12px;
       margin: 8px;
       transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 168, 232, 0.4);
     }
 
     .button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.6);
+      box-shadow: 0 6px 16px rgba(0, 168, 232, 0.6);
     }
 
     .button-secondary {
-      background: rgba(99, 102, 241, 0.1);
-      border: 2px solid #6366F1;
+      background: rgba(0, 168, 232, 0.1);
+      border: 2px solid #00A8E8;
       box-shadow: none;
     }
 
     .button-secondary:hover {
-      background: rgba(99, 102, 241, 0.2);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      background: rgba(0, 168, 232, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 168, 232, 0.3);
     }
 
     .store-buttons {
@@ -123,6 +123,23 @@ serve(async (req) => {
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 14px;
       color: rgba(255, 255, 255, 0.5);
+    }
+
+    .footer .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .footer .brand-icon {
+      font-size: 16px;
+    }
+
+    .footer .brand-name {
+      font-weight: 700;
+      color: #00A8E8;
     }
 
     @media (max-width: 480px) {
@@ -144,7 +161,7 @@ serve(async (req) => {
       width: 24px;
       height: 24px;
       border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top-color: #FFFFFF;
+      border-top-color: #00A8E8;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       display: inline-block;
@@ -155,34 +172,43 @@ serve(async (req) => {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .success-check {
+      color: #14B8A6;
+      font-size: 40px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="icon">✓</div>
+    <div class="icon">
+      <span class="success-check">✓</span>
+    </div>
     <h1>Email Verified!</h1>
     <p id="status-text" class="opening-text">
       <span class="spinner"></span>
-      Opening TipGenius...
+      Opening TipFly...
     </p>
-    <p>Your email has been successfully verified. You now have access to all premium features including tax exports, advanced analytics, and team pooling.</p>
+    <p>Your email has been successfully verified. You now have access to all features including tip tracking, analytics, and team pooling.</p>
 
-    <a href="tipgenius://verify-success" class="button" id="open-app-btn">
-      Open TipGenius App
+    <a href="tipflyai://verify-success" class="button" id="open-app-btn">
+      Open TipFly App
     </a>
 
     <div class="store-buttons" id="store-buttons" style="display: none;">
       <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 8px;">Don't have the app yet?</p>
-      <a href="https://apps.apple.com/app/tipgenius" class="button button-secondary">
+      <a href="https://apps.apple.com/app/tipfly-ai/id6738029795" class="button button-secondary">
         Download on App Store
-      </a>
-      <a href="https://play.google.com/store/apps/details?id=com.tipgenius.app" class="button button-secondary">
-        Get it on Google Play
       </a>
     </div>
 
     <div class="footer">
-      <p>© ${new Date().getFullYear()} TipGenius • Track smarter, earn better</p>
+      <div class="brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-name">TipFly AI</span>
+        <span style="color: rgba(255,255,255,0.5);">by DropFly</span>
+      </div>
+      <p>Track Your Tips, Master Your Money</p>
     </div>
   </div>
 
@@ -192,7 +218,7 @@ serve(async (req) => {
 
     function tryOpenApp() {
       if (!appOpened) {
-        window.location.href = 'tipgenius://verify-success';
+        window.location.href = 'tipflyai://verify-success';
         appOpened = true;
 
         // After 2 seconds, show store buttons if app didn't open

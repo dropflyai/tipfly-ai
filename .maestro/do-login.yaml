@@ -1,0 +1,20 @@
+appId: host.exp.Exponent
+---
+# Current state: Login screen with email filled, password empty
+
+# Tap password field by label
+- tapOn: "Password"
+- inputText: "Test123!"
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap Log In button
+- tapOn:
+    text: "Log In"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 20000
+
+# Take screenshot of whatever loaded
+- takeScreenshot: AppStoreScreenshots/iPhone/04_AfterLogin

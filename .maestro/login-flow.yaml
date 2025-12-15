@@ -1,0 +1,42 @@
+appId: host.exp.Exponent
+---
+# Log in flow - handles keyboard better
+
+# First go to login if not already there
+- tapOn:
+    text: "Log In"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Tap email field
+- tapOn: "Email"
+- inputText: "escott1188@gmail.com"
+
+# Hide keyboard first
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Now tap password field
+- tapOn: "Password"
+- inputText: "Test123!"
+
+# Hide keyboard
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap Log In button
+- tapOn:
+    text: "Log In →"
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Wait for dashboard
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 20000
+
+# Screenshot Dashboard
+- takeScreenshot: AppStoreScreenshots/iPhone/04_Dashboard

@@ -1,0 +1,41 @@
+appId: host.exp.Exponent
+---
+# Capture remaining tabs - starting from Dashboard
+
+# Tap the yellow + button to add tip
+- tapOn:
+    point: "90%,72%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 5: Add Tip
+- takeScreenshot: AppStoreScreenshots/iPhone/05_AddTip
+
+# Close/go back
+- back
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Navigate to Analytics tab
+- tapOn: "Analytics"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 6: Analytics/Stats
+- takeScreenshot: AppStoreScreenshots/iPhone/06_Analytics
+
+# Navigate to Teams
+- tapOn: "Teams"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 7: Teams
+- takeScreenshot: AppStoreScreenshots/iPhone/07_Teams
+
+# Navigate to Profile/Settings
+- tapOn: "Profile"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 8: Profile/Settings
+- takeScreenshot: AppStoreScreenshots/iPhone/08_Profile

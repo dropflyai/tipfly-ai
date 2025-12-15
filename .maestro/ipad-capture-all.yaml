@@ -1,0 +1,39 @@
+appId: host.exp.Exponent
+---
+# Capture all iPad screens - starting from Dashboard
+
+# Screenshot 1: Dashboard
+- takeScreenshot: AppStoreScreenshots/iPad/01_Dashboard
+
+# Tap Analytics tab (second tab ~37%)
+- tapOn:
+    point: "37%,97%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 2: Analytics
+- takeScreenshot: AppStoreScreenshots/iPad/02_Analytics
+
+# Tap Teams tab (third ~62%)
+- tapOn:
+    point: "62%,97%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 3: Teams
+- takeScreenshot: AppStoreScreenshots/iPad/03_Teams
+
+# Tap Profile tab (fourth ~87%)
+- tapOn:
+    point: "87%,97%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 4: Profile
+- takeScreenshot: AppStoreScreenshots/iPad/04_Profile
+
+# Go back to Home
+- tapOn:
+    point: "12%,97%"
+- waitForAnimationToEnd:
+    timeout: 2000

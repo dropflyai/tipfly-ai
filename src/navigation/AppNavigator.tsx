@@ -29,6 +29,7 @@ import CreatePoolScreen from '../screens/pools/CreatePoolScreen';
 import PoolDetailScreen from '../screens/pools/PoolDetailScreen';
 import ContactSupportScreen from '../screens/settings/ContactSupportScreen';
 import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
+import NotificationSettingsScreen from '../screens/settings/NotificationSettingsScreen';
 import LockScreen from '../components/LockScreen';
 import SplashAnimation from '../components/SplashAnimation';
 import CelebrationModal from '../components/CelebrationModal';
@@ -337,6 +338,14 @@ export default function AppNavigator() {
               options={{
                 headerShown: false,
                 title: 'Privacy Settings'
+              }}
+            />
+            <Stack.Screen
+              name="NotificationSettings"
+              component={NotificationSettingsScreen}
+              options={{
+                headerShown: false,
+                title: 'Notifications'
               }}
             />
           </>

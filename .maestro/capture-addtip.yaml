@@ -1,0 +1,18 @@
+appId: host.exp.Exponent
+---
+# Go to Home and tap FAB
+
+# Go to Home tab first
+- tapOn:
+    point: "12%,97%"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap the yellow FAB button (it's in bottom right)
+- tapOn:
+    point: "88%,73%"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot Add Tip
+- takeScreenshot: AppStoreScreenshots/iPhone/05_AddTip

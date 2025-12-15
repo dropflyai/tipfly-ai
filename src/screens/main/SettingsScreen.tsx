@@ -299,7 +299,7 @@ export default function SettingsScreen() {
               title="Notifications"
               onPress={() => {
                 lightHaptic();
-                Alert.alert('Coming Soon', 'Notification settings will be available soon');
+                navigation.navigate('NotificationSettings' as never);
               }}
             />
             <SettingsOption

@@ -1,0 +1,9 @@
+appId: host.exp.Exponent
+---
+# Tap Open button on iPad
+- tapOn: "Open"
+- waitForAnimationToEnd:
+    timeout: 30000
+
+# Take screenshot
+- takeScreenshot: AppStoreScreenshots/iPad/01_Loading

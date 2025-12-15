@@ -1,0 +1,4 @@
+appId: host.exp.Exponent
+---
+# Capture current screen (Add Tip)
+- takeScreenshot: AppStoreScreenshots/iPhone/05_AddTip

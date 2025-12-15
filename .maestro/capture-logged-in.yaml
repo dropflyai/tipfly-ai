@@ -1,0 +1,35 @@
+appId: host.exp.Exponent
+---
+# Capture all logged-in screens - starting from Dashboard
+
+# Screenshot 4: Dashboard
+- takeScreenshot: AppStoreScreenshots/iPhone/04_Dashboard
+
+# Navigate to Add Tip tab
+- tapOn: "Add"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 5: Add Tip
+- takeScreenshot: AppStoreScreenshots/iPhone/05_AddTip
+
+# Navigate to Stats
+- tapOn: "Stats"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 6: Stats
+- takeScreenshot: AppStoreScreenshots/iPhone/06_Stats
+
+# Navigate to Settings
+- tapOn: "Settings"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 7: Settings
+- takeScreenshot: AppStoreScreenshots/iPhone/07_Settings
+
+# Go back to Dashboard for any additional shots
+- tapOn: "Home"
+- waitForAnimationToEnd:
+    timeout: 3000

@@ -1,0 +1,30 @@
+appId: host.exp.Exponent
+---
+# TipFly AI - Full App Store Screenshot Flow
+# Captures all key screens for App Store submission
+
+# Screenshot 1: Landing Screen
+- takeScreenshot: AppStoreScreenshots/iPhone/01_Landing
+
+# Tap Login
+- tapOn: "I already have an account"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Screenshot 2: Login Screen
+- takeScreenshot: AppStoreScreenshots/iPhone/02_Login
+
+# Go back to landing
+- tapOn:
+    id: ".*back.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Or tap Get Started to see signup
+- tapOn: "Get Started Free"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Screenshot 3: Signup Screen
+- takeScreenshot: AppStoreScreenshots/iPhone/03_Signup

@@ -1,0 +1,17 @@
+appId: host.exp.Exponent
+---
+# Continue from Login screen - capture Signup
+# Current state: on Login screen
+
+# Tap Sign Up link
+- tapOn: "Sign Up"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Screenshot 3: Signup Screen
+- takeScreenshot: AppStoreScreenshots/iPhone/03_Signup
+
+# Go back and then log in with real credentials
+- back
+- waitForAnimationToEnd:
+    timeout: 3000

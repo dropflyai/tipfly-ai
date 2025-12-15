@@ -1,0 +1,20 @@
+appId: host.exp.Exponent
+---
+# TipFly AI - Complete Screenshot Capture
+# Run: maestro test .maestro/capture-all-screens.yaml
+
+# Wait for app to fully load
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Dismiss Expo developer menu if present
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# Take screenshot of current screen
+- takeScreenshot: AppStoreScreenshots/01_Current_Screen

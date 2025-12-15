@@ -1,0 +1,42 @@
+appId: host.exp.Exponent
+---
+# Login - use repeat tap and type char by char
+
+# Double tap on password field to ensure focus
+- tapOn:
+    point: "50%,43%"
+- tapOn:
+    point: "50%,43%"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Use inputRandomText first to verify input works
+- inputText: "F"
+- inputText: "a"
+- inputText: "l"
+- inputText: "c"
+- inputText: "o"
+- inputText: "n"
+- inputText: "s"
+- inputText: "2"
+- inputText: "0"
+- inputText: "2"
+- inputText: "5"
+- inputText: "!"
+
+# Take screenshot to verify
+- takeScreenshot: AppStoreScreenshots/iPhone/debug_password_entered
+
+# Hide keyboard
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap login button
+- tapOn:
+    point: "50%,52%"
+- waitForAnimationToEnd:
+    timeout: 20000
+
+# Screenshot result
+- takeScreenshot: AppStoreScreenshots/iPhone/04_Dashboard

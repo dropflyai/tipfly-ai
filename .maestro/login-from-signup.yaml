@@ -1,0 +1,61 @@
+appId: host.exp.Exponent
+---
+# Login from current Signup screen
+
+# Tap "Log In" link at bottom of signup screen
+- tapOn: "Log In"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Now on Login screen - clear any existing text and enter email
+- tapOn: "Enter your email"
+- inputText: "escott1188@gmail.com"
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Enter password
+- tapOn: "Enter your password"
+- inputText: "Test123!"
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap Log In button - use partial match
+- tapOn:
+    text: ".*Log In.*"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Wait for dashboard to load
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 25000
+
+# Screenshot 4: Dashboard
+- takeScreenshot: AppStoreScreenshots/iPhone/04_Dashboard
+
+# Navigate to Add Tip tab
+- tapOn: "Add"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 5: Add Tip
+- takeScreenshot: AppStoreScreenshots/iPhone/05_AddTip
+
+# Navigate to Stats
+- tapOn: "Stats"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 6: Stats
+- takeScreenshot: AppStoreScreenshots/iPhone/06_Stats
+
+# Navigate to Settings
+- tapOn: "Settings"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 7: Settings
+- takeScreenshot: AppStoreScreenshots/iPhone/07_Settings

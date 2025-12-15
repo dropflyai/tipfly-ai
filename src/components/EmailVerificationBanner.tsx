@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  AppState,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
@@ -16,9 +17,36 @@ export default function EmailVerificationBanner() {
   const user = useUserStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+
+  // Check email verification status from Supabase Auth
+  useEffect(() => {
+    checkEmailVerification();
+
+    // Re-check when app comes to foreground (user might have verified in browser)
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkEmailVerification();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const checkEmailVerification = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser?.email_confirmed_at) {
+        console.log('[EmailVerificationBanner] Email is verified:', authUser.email_confirmed_at);
+        setIsEmailVerified(true);
+      }
+    } catch (error) {
+      console.error('[EmailVerificationBanner] Error checking verification:', error);
+    }
+  };
 
   // Don't show banner if email is already verified or user dismissed it
-  if (!user || user.email_confirmed_at || user.user_metadata?.email_verified || dismissed) {
+  if (!user || isEmailVerified || dismissed) {
     return null;
   }
 

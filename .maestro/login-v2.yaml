@@ -1,0 +1,29 @@
+appId: host.exp.Exponent
+---
+# Login attempt - tap directly on password input area
+
+# Tap on password input field area (around 44% from top)
+- tapOn:
+    point: "50%,44%"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Type password
+- inputText: "Falcons2025!"
+
+# Hide keyboard
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Take a screenshot to see current state
+- takeScreenshot: AppStoreScreenshots/iPhone/debug_before_login
+
+# Tap Log In button (around 52% from top)
+- tapOn:
+    point: "50%,52%"
+- waitForAnimationToEnd:
+    timeout: 25000
+
+# Take screenshot
+- takeScreenshot: AppStoreScreenshots/iPhone/04_Dashboard

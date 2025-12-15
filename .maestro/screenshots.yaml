@@ -1,0 +1,30 @@
+appId: host.exp.Exponent
+---
+# TipFly AI - App Store Screenshot Automation
+# Run with: maestro test .maestro/screenshots.yaml
+
+# Wait for app to load
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Dismiss Expo developer menu if present
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Screenshot 1: Landing Screen (Onboarding)
+- assertVisible: "Stop guessing."
+- takeScreenshot: screenshots/01_Landing
+
+# Tap "I already have an account" to go to login
+- tapOn: "I already have an account"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Screenshot 2: Login Screen
+- assertVisible: "Welcome back"
+- takeScreenshot: screenshots/02_Login
