@@ -8,7 +8,15 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +44,18 @@ export default function StatsScreen() {
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Collapsible section states
+  const [weeklyExpanded, setWeeklyExpanded] = useState(true);
+  const [monthlyExpanded, setMonthlyExpanded] = useState(true);
+  const [shiftComparisonExpanded, setShiftComparisonExpanded] = useState(true);
+  const [hourlyByDayExpanded, setHourlyByDayExpanded] = useState(true);
+
+  const toggleSection = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    lightHaptic();
+    setter(prev => !prev);
+  };
 
   useEffect(() => {
     loadStatsData();
@@ -109,21 +129,56 @@ export default function StatsScreen() {
     );
   }
 
-  // Prepare weekly bar chart data
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const weeklyTotals = weekDays.map((day, index) => {
+  // Prepare weekly bar chart data - showing averages per day
+  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const weekDaysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Calculate per-day stats
+  const weeklyStats = weekDays.map((day, index) => {
     const dayTips = weeklyData.filter(entry => {
       const entryDay = new Date(entry.date).getDay();
       return entryDay === index;
     });
-    return calculateTotalTips(dayTips);
+    const total = calculateTotalTips(dayTips);
+    const count = dayTips.length;
+    const hours = dayTips.reduce((sum, e) => sum + (e.hours_worked || 0), 0);
+    return {
+      day,
+      dayFull: weekDaysFull[index],
+      avgTips: count > 0 ? total / count : 0,
+      hourlyRate: hours > 0 ? total / hours : 0,
+      shiftCount: count,
+      totalHours: hours,
+    };
   });
+
+  const weeklyAverages = weeklyStats.map(s => s.avgTips);
+
+  // Find busiest day (most shifts)
+  const busiestDay = [...weeklyStats].sort((a, b) => b.shiftCount - a.shiftCount)[0];
+
+  // Day vs Night shift comparison
+  const dayShifts = weeklyData.filter(e => e.shift_type === 'day');
+  const nightShifts = weeklyData.filter(e => e.shift_type === 'night');
+  const dayShiftStats = {
+    count: dayShifts.length,
+    avgTips: dayShifts.length > 0 ? calculateTotalTips(dayShifts) / dayShifts.length : 0,
+    totalHours: dayShifts.reduce((sum, e) => sum + (e.hours_worked || 0), 0),
+    hourlyRate: calculateAverageHourlyRate(dayShifts),
+  };
+  const nightShiftStats = {
+    count: nightShifts.length,
+    avgTips: nightShifts.length > 0 ? calculateTotalTips(nightShifts) / nightShifts.length : 0,
+    totalHours: nightShifts.reduce((sum, e) => sum + (e.hours_worked || 0), 0),
+    hourlyRate: calculateAverageHourlyRate(nightShifts),
+  };
+  const hasShiftComparison = dayShiftStats.count > 0 || nightShiftStats.count > 0;
 
   const weeklyChartData = {
     labels: weekDays,
     datasets: [
       {
-        data: weeklyTotals.length > 0 ? weeklyTotals : [0, 0, 0, 0, 0, 0, 0],
+        data: weeklyAverages.length > 0 ? weeklyAverages : [0, 0, 0, 0, 0, 0, 0],
       },
     ],
   };
@@ -160,9 +215,9 @@ export default function StatsScreen() {
 
   const weekTotal = calculateTotalTips(weeklyData);
   const weekAvgHourly = calculateAverageHourlyRate(weeklyData);
-  const bestDayIndex = weeklyTotals.indexOf(Math.max(...weeklyTotals));
-  const bestDay = weekDays[bestDayIndex];
-  const bestDayAmount = weeklyTotals[bestDayIndex];
+  const bestDayIndex = weeklyAverages.indexOf(Math.max(...weeklyAverages));
+  const bestDay = weekDaysFull[bestDayIndex];
+  const bestDayAmount = weeklyAverages[bestDayIndex];
 
   // Week-over-week comparison
   const lastWeekTotal = calculateTotalTips(lastWeekData);
@@ -403,52 +458,262 @@ export default function StatsScreen() {
           </View>
         )}
 
-        {/* Weekly Bar Chart */}
+        {/* Weekly Earnings - Row Style (Collapsible) */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <View style={styles.chartIconContainer}>
-              <Ionicons name="bar-chart" size={20} color={Colors.primary} />
+          <TouchableOpacity
+            style={styles.collapsibleHeader}
+            onPress={() => toggleSection(setWeeklyExpanded)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.chartHeader}>
+              <View style={styles.chartIconContainer}>
+                <Ionicons name="calendar" size={20} color={Colors.primary} />
+              </View>
+              <Text style={styles.chartTitle}>Weekly Earnings</Text>
             </View>
-            <Text style={styles.chartTitle}>Weekly Earnings</Text>
-          </View>
-          <BarChart
-            data={weeklyChartData}
-            width={screenWidth - 56}
-            height={220}
-            yAxisLabel="$"
-            yAxisSuffix=""
-            chartConfig={chartConfig}
-            style={styles.chart}
-            showValuesOnTopOfBars={true}
-            fromZero={true}
-          />
-          <Text style={styles.chartCaption}>
-            Tips by day of the week
-          </Text>
+            <Ionicons
+              name={weeklyExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={Colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {weeklyExpanded && (
+            <>
+              {weeklyAverages.some(v => v > 0) ? (
+                <>
+                  <View style={styles.weeklyRows}>
+                    {weekDays.map((day, index) => {
+                      const amount = weeklyAverages[index];
+                      const maxAmount = Math.max(...weeklyAverages, 1);
+                      const isTopDay = amount === maxAmount && amount > 0;
+                      return (
+                        <View key={day} style={styles.weeklyRow}>
+                          <View style={[
+                            styles.dayBadge,
+                            isTopDay && styles.dayBadgeTop
+                          ]}>
+                            <Text style={[
+                              styles.dayBadgeText,
+                              isTopDay && styles.dayBadgeTextTop
+                            ]}>{day}</Text>
+                          </View>
+                          <View style={styles.weeklyBarContainer}>
+                            <View
+                              style={[
+                                styles.weeklyBarFill,
+                                {
+                                  width: `${(amount / maxAmount) * 100}%`,
+                                  backgroundColor: isTopDay ? Colors.gold : Colors.primary,
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Text style={[
+                            styles.weeklyAmount,
+                            isTopDay && styles.weeklyAmountTop
+                          ]}>{formatCurrency(amount)}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <Text style={styles.chartCaption}>
+                    Average earnings per day
+                  </Text>
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="calendar-outline" size={32} color={Colors.textSecondary} />
+                  <Text style={styles.emptyStateTitle}>No tips logged yet</Text>
+                  <Text style={styles.emptyStateText}>Add your first tip to see weekly trends</Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
 
-        {/* Monthly Line Chart */}
+        {/* Hourly Rate by Day (Collapsible) */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <View style={styles.chartIconContainer}>
-              <Ionicons name="trending-up" size={20} color={Colors.primary} />
+          <TouchableOpacity
+            style={styles.collapsibleHeader}
+            onPress={() => toggleSection(setHourlyByDayExpanded)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.chartHeader}>
+              <View style={styles.chartIconContainer}>
+                <Ionicons name="time" size={20} color={Colors.primary} />
+              </View>
+              <Text style={styles.chartTitle}>Hourly Rate by Day</Text>
             </View>
-            <Text style={styles.chartTitle}>Monthly Trend</Text>
+            <Ionicons
+              name={hourlyByDayExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={Colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {hourlyByDayExpanded && (
+            <>
+              {weeklyStats.some(s => s.hourlyRate > 0) ? (
+                <>
+                  <View style={styles.weeklyRows}>
+                    {weeklyStats
+                      .filter(s => s.hourlyRate > 0)
+                      .sort((a, b) => b.hourlyRate - a.hourlyRate)
+                      .map((stat, index) => {
+                        const maxRate = Math.max(...weeklyStats.map(s => s.hourlyRate), 1);
+                        const isTop = index === 0;
+                        return (
+                          <View key={stat.day} style={styles.weeklyRow}>
+                            <View style={[
+                              styles.dayBadge,
+                              isTop && styles.dayBadgeTop
+                            ]}>
+                              <Text style={[
+                                styles.dayBadgeText,
+                                isTop && styles.dayBadgeTextTop
+                              ]}>{stat.day}</Text>
+                            </View>
+                            <View style={styles.weeklyBarContainer}>
+                              <View
+                                style={[
+                                  styles.weeklyBarFill,
+                                  {
+                                    width: `${(stat.hourlyRate / maxRate) * 100}%`,
+                                    backgroundColor: isTop ? Colors.gold : Colors.primary,
+                                  },
+                                ]}
+                              />
+                            </View>
+                            <Text style={[
+                              styles.weeklyAmount,
+                              isTop && styles.weeklyAmountTop
+                            ]}>${stat.hourlyRate.toFixed(2)}/hr</Text>
+                          </View>
+                        );
+                      })}
+                  </View>
+                  {busiestDay.shiftCount > 0 && (
+                    <View style={styles.busiestDayBadge}>
+                      <Ionicons name="flash" size={14} color={Colors.gold} />
+                      <Text style={styles.busiestDayText}>
+                        {busiestDay.dayFull} is your busiest day ({busiestDay.shiftCount} shift{busiestDay.shiftCount !== 1 ? 's' : ''})
+                      </Text>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="time-outline" size={32} color={Colors.textSecondary} />
+                  <Text style={styles.emptyStateTitle}>No tips logged yet</Text>
+                  <Text style={styles.emptyStateText}>Add your first tip to see hourly rates</Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* Day vs Night Shift Comparison (Collapsible) */}
+        {hasShiftComparison && (
+          <View style={styles.chartCard}>
+            <TouchableOpacity
+              style={styles.collapsibleHeader}
+              onPress={() => toggleSection(setShiftComparisonExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.chartHeader}>
+                <View style={styles.chartIconContainer}>
+                  <Ionicons name="sunny" size={20} color={Colors.primary} />
+                </View>
+                <Text style={styles.chartTitle}>Day vs Night Shifts</Text>
+              </View>
+              <Ionicons
+                name={shiftComparisonExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={Colors.textSecondary}
+              />
+            </TouchableOpacity>
+            {shiftComparisonExpanded && (
+              <View style={styles.shiftComparison}>
+                {/* Day Shift Card */}
+                <View style={[styles.shiftCard, dayShiftStats.avgTips >= nightShiftStats.avgTips && styles.shiftCardWinner]}>
+                  <View style={styles.shiftCardHeader}>
+                    <Ionicons name="sunny" size={24} color="#FCD34D" />
+                    <Text style={styles.shiftCardTitle}>Day Shifts</Text>
+                  </View>
+                  <Text style={styles.shiftCardAmount}>{formatCurrency(dayShiftStats.avgTips)}</Text>
+                  <Text style={styles.shiftCardLabel}>avg per shift</Text>
+                  <View style={styles.shiftCardStats}>
+                    <Text style={styles.shiftCardStat}>${dayShiftStats.hourlyRate.toFixed(2)}/hr</Text>
+                    <Text style={styles.shiftCardDivider}>•</Text>
+                    <Text style={styles.shiftCardStat}>{dayShiftStats.count} shifts</Text>
+                  </View>
+                </View>
+
+                {/* Night Shift Card */}
+                <View style={[styles.shiftCard, nightShiftStats.avgTips > dayShiftStats.avgTips && styles.shiftCardWinner]}>
+                  <View style={styles.shiftCardHeader}>
+                    <Ionicons name="moon" size={24} color="#818CF8" />
+                    <Text style={styles.shiftCardTitle}>Night Shifts</Text>
+                  </View>
+                  <Text style={styles.shiftCardAmount}>{formatCurrency(nightShiftStats.avgTips)}</Text>
+                  <Text style={styles.shiftCardLabel}>avg per shift</Text>
+                  <View style={styles.shiftCardStats}>
+                    <Text style={styles.shiftCardStat}>${nightShiftStats.hourlyRate.toFixed(2)}/hr</Text>
+                    <Text style={styles.shiftCardDivider}>•</Text>
+                    <Text style={styles.shiftCardStat}>{nightShiftStats.count} shifts</Text>
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
-          <LineChart
-            data={monthlyChartData}
-            width={screenWidth - 56}
-            height={220}
-            yAxisLabel="$"
-            yAxisSuffix=""
-            chartConfig={chartConfig}
-            style={styles.chart}
-            bezier={true}
-            fromZero={true}
-          />
-          <Text style={styles.chartCaption}>
-            Last 6 months tip earnings
-          </Text>
+        )}
+
+        {/* Monthly Line Chart (Collapsible) */}
+        <View style={styles.chartCard}>
+          <TouchableOpacity
+            style={styles.collapsibleHeader}
+            onPress={() => toggleSection(setMonthlyExpanded)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.chartHeader}>
+              <View style={styles.chartIconContainer}>
+                <Ionicons name="trending-up" size={20} color={Colors.primary} />
+              </View>
+              <Text style={styles.chartTitle}>Monthly Trend</Text>
+            </View>
+            <Ionicons
+              name={monthlyExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={Colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {monthlyExpanded && (
+            <>
+              {monthlyData.some(m => m.total > 0) ? (
+                <>
+                  <LineChart
+                    data={monthlyChartData}
+                    width={screenWidth - 80}
+                    height={220}
+                    yAxisLabel="$"
+                    yAxisSuffix=""
+                    chartConfig={chartConfig}
+                    style={styles.chart}
+                    bezier={true}
+                    fromZero={true}
+                  />
+                  <Text style={styles.chartCaption}>
+                    Last 6 months tip earnings
+                  </Text>
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="trending-up-outline" size={32} color={Colors.textSecondary} />
+                  <Text style={styles.emptyStateTitle}>No tips logged yet</Text>
+                  <Text style={styles.emptyStateText}>Add your first tip to see monthly trends</Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
 
         {/* Premium Charts */}
@@ -468,7 +733,7 @@ export default function StatsScreen() {
               </View>
               <PieChart
                 data={shiftPerformance}
-                width={screenWidth - 56}
+                width={screenWidth - 80}
                 height={200}
                 chartConfig={chartConfig}
                 accessor="amount"
@@ -797,6 +1062,133 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
   },
+  // Weekly Earnings Row Style
+  weeklyRows: {
+    gap: 10,
+    marginVertical: 8,
+  },
+  weeklyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dayBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayBadgeTop: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+  },
+  dayBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  dayBadgeTextTop: {
+    color: Colors.gold,
+  },
+  weeklyBarContainer: {
+    flex: 1,
+    height: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  weeklyBarFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  weeklyAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
+    minWidth: 70,
+    textAlign: 'right',
+  },
+  weeklyAmountTop: {
+    color: Colors.gold,
+  },
+  // Collapsible Header
+  collapsibleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  // Busiest Day Badge
+  busiestDayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  busiestDayText: {
+    fontSize: 13,
+    color: Colors.gold,
+    fontWeight: '600',
+  },
+  // Shift Comparison
+  shiftComparison: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  shiftCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  shiftCardWinner: {
+    borderColor: Colors.gold,
+    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+  },
+  shiftCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  shiftCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  shiftCardAmount: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  shiftCardLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  shiftCardStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  shiftCardStat: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  shiftCardDivider: {
+    color: Colors.textSecondary,
+    opacity: 0.5,
+  },
   // Premium Badge
   premiumBadge: {
     flexDirection: 'row',
@@ -1000,6 +1392,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 20,
+  },
+  // Empty State (friendly "no tips yet" state)
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    gap: 8,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
   // Insights Card
   insightsCard: {

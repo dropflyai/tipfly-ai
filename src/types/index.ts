@@ -41,6 +41,17 @@ export type Job = {
   updated_at: string;
 };
 
+export type Position = {
+  id: string;
+  job_id: string;
+  user_id: string;
+  name: string; // "Server", "Bartender", "Host", etc.
+  color: string;
+  is_default: boolean; // Default position for this job
+  created_at: string;
+  updated_at: string;
+};
+
 export type JobStatistics = {
   id: string;
   user_id: string;
@@ -59,11 +70,13 @@ export type TipEntry = {
   id: string;
   user_id: string;
   job_id?: string;
+  position_id?: string; // Optional position within a job (Server, Bartender, etc.)
   date: string;
   clock_in?: string;  // ISO timestamp for shift start
   clock_out?: string; // ISO timestamp for shift end
   hours_worked: number;
   tips_earned: number;
+  tip_out?: number; // Amount tipped out to support staff (busboys, bar, hosts)
   shift_type: 'day' | 'night' | 'double' | 'other';
   notes?: string;
   created_at: string;

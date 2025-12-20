@@ -27,8 +27,9 @@ import { parseConversationalEntry, ParsedTipEntry } from '../../services/ai/conv
 import { getCurrentUser } from '../../services/api/supabase';
 import { useUserStore } from '../../store/userStore';
 import { useAnimationStore } from '../../store/animationStore';
-import { Job } from '../../types';
+import { Job, Position } from '../../types';
 import { getPrimaryJob } from '../../services/api/jobs';
+import { getPositionsByJob, getDefaultPosition } from '../../services/api/positions';
 import JobSelector from '../../components/common/JobSelector';
 import CelebrationModal from '../../components/CelebrationModal';
 
@@ -49,9 +50,12 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
   const [showClockInPicker, setShowClockInPicker] = useState(false);
   const [showClockOutPicker, setShowClockOutPicker] = useState(false);
   const [tipsEarned, setTipsEarned] = useState('');
+  const [tipOut, setTipOut] = useState('');
   const [shiftType, setShiftType] = useState<string>('day');
   const [notes, setNotes] = useState('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [loading, setLoading] = useState(false);
 
   // AI Entry state
@@ -82,9 +86,42 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
       const primaryJob = await getPrimaryJob();
       if (primaryJob) {
         setSelectedJob(primaryJob);
+        loadPositionsForJob(primaryJob.id);
       }
     } catch (error) {
       console.error('[AddTipScreen] Error loading primary job:', error);
+    }
+  };
+
+  const loadPositionsForJob = async (jobId: string) => {
+    try {
+      const jobPositions = await getPositionsByJob(jobId);
+      setPositions(jobPositions);
+
+      // Auto-select the default position if one exists
+      const defaultPos = jobPositions.find(p => p.is_default);
+      if (defaultPos) {
+        setSelectedPosition(defaultPos);
+      } else if (jobPositions.length === 1) {
+        // If only one position, auto-select it
+        setSelectedPosition(jobPositions[0]);
+      } else {
+        setSelectedPosition(null);
+      }
+    } catch (error) {
+      console.error('[AddTipScreen] Error loading positions:', error);
+      setPositions([]);
+      setSelectedPosition(null);
+    }
+  };
+
+  const handleJobSelect = (job: Job | null) => {
+    setSelectedJob(job);
+    if (job) {
+      loadPositionsForJob(job.id);
+    } else {
+      setPositions([]);
+      setSelectedPosition(null);
     }
   };
 
@@ -238,6 +275,9 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
 
     setLoading(true);
 
+    // Parse tip out amount
+    const tipOutAmount = tipOut ? parseFloat(tipOut) : undefined;
+
     try {
       await createTipEntry({
         date: date.toISOString().split('T')[0],
@@ -245,8 +285,10 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         clock_out: clockOut.toISOString(),
         hours_worked: hours,
         tips_earned: tips,
+        tip_out: tipOutAmount && tipOutAmount > 0 ? tipOutAmount : undefined,
         shift_type: shiftType as any,
         job_id: selectedJob?.id,
+        position_id: selectedPosition?.id,
         notes: cleanNotes || undefined,
       });
 
@@ -260,8 +302,14 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
       setClockIn(null);
       setClockOut(null);
       setTipsEarned('');
+      setTipOut('');
       setNotes('');
       setDate(new Date());
+      // Reset position to default for next entry
+      if (positions.length > 0) {
+        const defaultPos = positions.find(p => p.is_default);
+        setSelectedPosition(defaultPos || null);
+      }
 
       // Check for tip milestone celebration
       const { shouldCelebrate, milestone } = await incrementTipCount();
@@ -542,9 +590,54 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         {/* Job Selector */}
         <JobSelector
           selectedJobId={selectedJob?.id}
-          onSelectJob={setSelectedJob}
+          onSelectJob={handleJobSelect}
           allowNone={true}
         />
+
+        {/* Position Selector (only show if job has positions) */}
+        {selectedJob && positions.length > 0 && (
+          <View style={styles.inputGroup}>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Position</Text>
+              {positions.length > 1 && (
+                <Text style={styles.labelOptional}>(Optional)</Text>
+              )}
+            </View>
+            <View style={styles.positionContainer}>
+              {positions.map((position) => (
+                <TouchableOpacity
+                  key={position.id}
+                  style={[
+                    styles.positionButton,
+                    selectedPosition?.id === position.id && styles.positionButtonActive,
+                    { borderColor: selectedPosition?.id === position.id ? position.color : Colors.border },
+                  ]}
+                  onPress={() => {
+                    selectionHaptic();
+                    setSelectedPosition(
+                      selectedPosition?.id === position.id ? null : position
+                    );
+                  }}
+                >
+                  <View style={[styles.positionColor, { backgroundColor: position.color }]} />
+                  <Text
+                    style={[
+                      styles.positionText,
+                      selectedPosition?.id === position.id && styles.positionTextActive,
+                    ]}
+                  >
+                    {position.name}
+                  </Text>
+                  {position.is_default && (
+                    <View style={styles.defaultIndicator}>
+                      <Text style={styles.defaultIndicatorText}>Default</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Clock In/Out Times */}
         <View style={styles.inputGroup}>
@@ -654,6 +747,37 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
               keyboardType="decimal-pad"
             />
           </View>
+        </View>
+
+        {/* Tip Out (Optional) */}
+        <View style={styles.inputGroup}>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Tip Out</Text>
+            <Text style={styles.labelOptional}>(Optional)</Text>
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputPrefix}>$</Text>
+            <TextInput
+              style={[styles.input, styles.inputWithPrefix]}
+              placeholder="0.00"
+              placeholderTextColor={Colors.gray400}
+              value={tipOut}
+              onChangeText={setTipOut}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <Text style={styles.tipOutHelper}>
+            Amount given to busboys, bartenders, hosts, etc.
+          </Text>
+          {/* Show net take-home if tip out is entered */}
+          {tipsEarned && tipOut && parseFloat(tipOut) > 0 && (
+            <View style={styles.netTakeHomeContainer}>
+              <Ionicons name="wallet-outline" size={18} color={Colors.success} />
+              <Text style={styles.netTakeHomeText}>
+                Net Take-Home: {formatCurrency(parseFloat(tipsEarned) - parseFloat(tipOut || '0'))}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Shift Type */}
@@ -867,6 +991,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  labelOptional: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '400',
+  },
+  tipOutHelper: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  netTakeHomeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.success + '15',
+    borderWidth: 1,
+    borderColor: Colors.success + '30',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+  },
+  netTakeHomeText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.success,
   },
   dateButton: {
     backgroundColor: Colors.backgroundSecondary,
@@ -1228,5 +1383,48 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: Colors.success,
+  },
+  positionContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  positionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  positionButtonActive: {
+    backgroundColor: Colors.primaryLight + '15',
+  },
+  positionColor: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  positionText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  positionTextActive: {
+    fontWeight: '600',
+  },
+  defaultIndicator: {
+    backgroundColor: Colors.primary + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  defaultIndicatorText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });

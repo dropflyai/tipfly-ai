@@ -36,10 +36,14 @@ export const AppConfig = {
 
   // Deduction categories
   DEDUCTION_CATEGORIES: [
-    { id: 'mileage', label: 'Mileage' },
-    { id: 'supplies', label: 'Supplies' },
-    { id: 'phone', label: 'Phone Bill' },
-    { id: 'other', label: 'Other' },
+    { id: 'mileage', label: 'Mileage', icon: '🚗' },
+    { id: 'uniform', label: 'Uniform/Attire', icon: '👔' },
+    { id: 'supplies', label: 'Supplies', icon: '🧴' },
+    { id: 'equipment', label: 'Equipment', icon: '🔧' },
+    { id: 'training', label: 'Training/Certs', icon: '📚' },
+    { id: 'phone', label: 'Phone/Tech', icon: '📱' },
+    { id: 'fees', label: 'Fees/Dues', icon: '💼' },
+    { id: 'other', label: 'Other', icon: '📝' },
   ],
 
   // Currency

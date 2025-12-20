@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   Share,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -34,6 +35,7 @@ export default function ExportReportsScreen() {
   const [selectedRange, setSelectedRange] = useState<DateRangeOption>('month');
   const [includeDeductions, setIncludeDeductions] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const getDateRange = (): { startDate: Date; endDate: Date } => {
     const now = new Date();
@@ -187,7 +189,15 @@ export default function ExportReportsScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Export Reports</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>Export Reports</Text>
+            <TouchableOpacity
+              style={styles.helpButton}
+              onPress={() => setShowInfoModal(true)}
+            >
+              <Ionicons name="help-circle-outline" size={26} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.headerSubtitle}>
             Generate detailed reports of your tip earnings
           </Text>
@@ -363,6 +373,129 @@ export default function ExportReportsScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* What's Included Info Modal */}
+      <Modal
+        visible={showInfoModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>What's Included?</Text>
+              <TouchableOpacity onPress={() => setShowInfoModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+              {/* CSV Section */}
+              <View style={styles.formatInfoCard}>
+                <View style={styles.formatInfoHeader}>
+                  <View style={styles.formatInfoIcon}>
+                    <Ionicons name="document-text" size={24} color={Colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={styles.formatInfoTitle}>CSV Export</Text>
+                    <Text style={styles.formatInfoBest}>Best for: Excel, Google Sheets, accountants</Text>
+                  </View>
+                </View>
+                <View style={styles.formatInfoBody}>
+                  <Text style={styles.formatInfoSectionTitle}>Your export includes:</Text>
+                  <View style={styles.formatInfoList}>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Every shift entry as a row</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Date, tips earned, hours worked</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Job, position, shift type, notes</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Deductions with categories (if enabled)</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Summary totals at the top</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.formatInfoUseCase}>
+                    Use this to import your data into spreadsheets, do your own analysis, or share raw data with your accountant.
+                  </Text>
+                </View>
+              </View>
+
+              {/* PDF Section */}
+              <View style={styles.formatInfoCard}>
+                <View style={styles.formatInfoHeader}>
+                  <View style={[styles.formatInfoIcon, { backgroundColor: Colors.accent + '20' }]}>
+                    <Ionicons name="document" size={24} color={Colors.accent} />
+                  </View>
+                  <View>
+                    <Text style={styles.formatInfoTitle}>PDF Export</Text>
+                    <Text style={styles.formatInfoBest}>Best for: Printing, emailing, records</Text>
+                  </View>
+                </View>
+                <View style={styles.formatInfoBody}>
+                  <Text style={styles.formatInfoSectionTitle}>Your export includes:</Text>
+                  <View style={styles.formatInfoList}>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Professional formatted document</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Earnings summary with totals</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>All shift entries in a table</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Deductions list (if enabled)</Text>
+                    </View>
+                    <View style={styles.formatInfoItem}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                      <Text style={styles.formatInfoItemText}>Ready to print or share</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.formatInfoUseCase}>
+                    Use this for personal records, printing for your files, or emailing a formatted report.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Tax Summary Callout */}
+              <View style={styles.taxSummaryCallout}>
+                <View style={styles.taxSummaryIcon}>
+                  <Ionicons name="calculator" size={20} color={Colors.warning} />
+                </View>
+                <View style={styles.taxSummaryContent}>
+                  <Text style={styles.taxSummaryTitle}>Looking for tax documents?</Text>
+                  <Text style={styles.taxSummaryText}>
+                    For a tax-ready summary with $25K threshold tracking, quarterly breakdown, and estimated tax calculations, use the PDF button on the Tax Tracking screen.
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowInfoModal(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>Got It</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -426,10 +559,18 @@ const styles = StyleSheet.create({
   header: {
     gap: 8,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: Colors.text,
+  },
+  helpButton: {
+    padding: 4,
   },
   headerSubtitle: {
     fontSize: 16,
@@ -673,6 +814,142 @@ const styles = StyleSheet.create({
   upgradeButtonText: {
     color: Colors.white,
     fontSize: 17,
+    fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: 20,
+    gap: 16,
+  },
+  formatInfoCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  formatInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  formatInfoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  formatInfoTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  formatInfoBest: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  formatInfoBody: {
+    padding: 16,
+    gap: 12,
+  },
+  formatInfoSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  formatInfoList: {
+    gap: 8,
+  },
+  formatInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  formatInfoItemText: {
+    fontSize: 14,
+    color: Colors.text,
+  },
+  formatInfoUseCase: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  taxSummaryCallout: {
+    flexDirection: 'row',
+    backgroundColor: Colors.warning + '15',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.warning + '30',
+  },
+  taxSummaryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.warning + '25',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  taxSummaryContent: {
+    flex: 1,
+    gap: 4,
+  },
+  taxSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.warning,
+  },
+  taxSummaryText: {
+    fontSize: 13,
+    color: Colors.text,
+    lineHeight: 19,
+  },
+  modalCloseButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    margin: 20,
+  },
+  modalCloseButtonText: {
+    color: Colors.white,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

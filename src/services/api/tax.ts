@@ -2,14 +2,25 @@
 import { supabase } from './supabase';
 import { Deduction } from '../../types';
 
+// Tax-free tips threshold under the "No Tax on Tips Act" (proposed 2025)
+// First $25,000 in tips would be exempt from federal income tax
+export const TAX_FREE_TIP_THRESHOLD = 25000;
+
 export interface TaxSummary {
   year: number;
   quarter: number;
-  totalEarnings: number;
-  totalDeductions: number;
-  netIncome: number;
+  totalEarnings: number;      // Gross tips earned
+  totalTipOut: number;        // Amount tipped out to support staff
+  netTipEarnings: number;     // Tips after tip out (totalEarnings - totalTipOut)
+  totalDeductions: number;    // Business deductions
+  netIncome: number;          // Net taxable income
   estimatedTax: number;
   taxRate: number;
+  // $25K threshold tracking
+  taxFreeTips: number;        // Tips within the $25K tax-free threshold
+  taxableTips: number;        // Tips exceeding the $25K threshold
+  thresholdProgress: number;  // Percentage toward $25K threshold (0-100)
+  isOverThreshold: boolean;   // True if exceeded $25K
 }
 
 export interface QuarterlyBreakdown {
@@ -55,41 +66,91 @@ export const getTaxSummary = async (year: number): Promise<QuarterlyBreakdown> =
       return Math.ceil(month / 3);
     };
 
+    // Calculate YTD totals first (needed for $25K threshold)
+    const yearTotalEarnings = tips?.reduce((sum, t) => sum + parseFloat(t.tips_earned?.toString() || '0'), 0) || 0;
+    const yearTotalTipOut = tips?.reduce((sum, t) => sum + parseFloat(t.tip_out?.toString() || '0'), 0) || 0;
+    const yearNetTipEarnings = yearTotalEarnings - yearTotalTipOut;
+
+    // Calculate $25K threshold values for the year
+    const yearTaxFreeTips = Math.min(yearNetTipEarnings, TAX_FREE_TIP_THRESHOLD);
+    const yearTaxableTips = Math.max(0, yearNetTipEarnings - TAX_FREE_TIP_THRESHOLD);
+    const yearThresholdProgress = Math.min(100, (yearNetTipEarnings / TAX_FREE_TIP_THRESHOLD) * 100);
+    const yearIsOverThreshold = yearNetTipEarnings > TAX_FREE_TIP_THRESHOLD;
+
     // Calculate summary for each quarter
-    const calculateQuarter = (quarterNum: number): TaxSummary => {
+    const calculateQuarter = (quarterNum: number, cumulativeTipsBeforeQuarter: number): TaxSummary => {
       const quarterTips = tips?.filter(t => getQuarter(t.date) === quarterNum) || [];
       const quarterDeductions = deductions?.filter(d => getQuarter(d.date) === quarterNum) || [];
 
-      const totalEarnings = quarterTips.reduce((sum, t) => sum + parseFloat(t.tips_earned.toString()), 0);
-      const totalDeductions = quarterDeductions.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
-      const netIncome = totalEarnings - totalDeductions;
-      const estimatedTax = netIncome * TAX_RATE;
+      const totalEarnings = quarterTips.reduce((sum, t) => sum + parseFloat(t.tips_earned?.toString() || '0'), 0);
+      const totalTipOut = quarterTips.reduce((sum, t) => sum + parseFloat(t.tip_out?.toString() || '0'), 0);
+      const netTipEarnings = totalEarnings - totalTipOut;
+      const totalDeductions = quarterDeductions.reduce((sum, d) => sum + parseFloat(d.amount?.toString() || '0'), 0);
+
+      // Calculate quarter's portion of taxable tips
+      // Tips are tax-free up to $25K cumulative for the year
+      const cumulativeAfterQuarter = cumulativeTipsBeforeQuarter + netTipEarnings;
+      const taxFreeBefore = Math.min(cumulativeTipsBeforeQuarter, TAX_FREE_TIP_THRESHOLD);
+      const taxFreeAfter = Math.min(cumulativeAfterQuarter, TAX_FREE_TIP_THRESHOLD);
+      const quarterTaxFreeTips = taxFreeAfter - taxFreeBefore;
+      const quarterTaxableTips = netTipEarnings - quarterTaxFreeTips;
+
+      // Only taxable tips are subject to self-employment tax
+      const netIncome = quarterTaxableTips - totalDeductions;
+      const estimatedTax = Math.max(0, netIncome) * TAX_RATE;
+
+      const thresholdProgress = Math.min(100, (cumulativeAfterQuarter / TAX_FREE_TIP_THRESHOLD) * 100);
 
       return {
         year,
         quarter: quarterNum,
         totalEarnings,
+        totalTipOut,
+        netTipEarnings,
         totalDeductions,
         netIncome,
         estimatedTax,
         taxRate: TAX_RATE,
+        taxFreeTips: quarterTaxFreeTips,
+        taxableTips: quarterTaxableTips,
+        thresholdProgress,
+        isOverThreshold: cumulativeAfterQuarter > TAX_FREE_TIP_THRESHOLD,
       };
     };
 
-    const q1 = calculateQuarter(1);
-    const q2 = calculateQuarter(2);
-    const q3 = calculateQuarter(3);
-    const q4 = calculateQuarter(4);
+    // Calculate quarters with cumulative tip tracking
+    const q1Tips = tips?.filter(t => getQuarter(t.date) === 1) || [];
+    const q1NetTips = q1Tips.reduce((sum, t) => sum + parseFloat(t.tips_earned?.toString() || '0') - parseFloat(t.tip_out?.toString() || '0'), 0);
+
+    const q2Tips = tips?.filter(t => getQuarter(t.date) === 2) || [];
+    const q2NetTips = q2Tips.reduce((sum, t) => sum + parseFloat(t.tips_earned?.toString() || '0') - parseFloat(t.tip_out?.toString() || '0'), 0);
+
+    const q3Tips = tips?.filter(t => getQuarter(t.date) === 3) || [];
+    const q3NetTips = q3Tips.reduce((sum, t) => sum + parseFloat(t.tips_earned?.toString() || '0') - parseFloat(t.tip_out?.toString() || '0'), 0);
+
+    const q1 = calculateQuarter(1, 0);
+    const q2 = calculateQuarter(2, q1NetTips);
+    const q3 = calculateQuarter(3, q1NetTips + q2NetTips);
+    const q4 = calculateQuarter(4, q1NetTips + q2NetTips + q3NetTips);
 
     // Year total
+    const yearTotalDeductions = q1.totalDeductions + q2.totalDeductions + q3.totalDeductions + q4.totalDeductions;
+    const yearNetIncome = yearTaxableTips - yearTotalDeductions;
+
     const yearTotal: TaxSummary = {
       year,
       quarter: 0,
-      totalEarnings: q1.totalEarnings + q2.totalEarnings + q3.totalEarnings + q4.totalEarnings,
-      totalDeductions: q1.totalDeductions + q2.totalDeductions + q3.totalDeductions + q4.totalDeductions,
-      netIncome: q1.netIncome + q2.netIncome + q3.netIncome + q4.netIncome,
-      estimatedTax: q1.estimatedTax + q2.estimatedTax + q3.estimatedTax + q4.estimatedTax,
+      totalEarnings: yearTotalEarnings,
+      totalTipOut: yearTotalTipOut,
+      netTipEarnings: yearNetTipEarnings,
+      totalDeductions: yearTotalDeductions,
+      netIncome: yearNetIncome,
+      estimatedTax: Math.max(0, yearNetIncome) * TAX_RATE,
       taxRate: TAX_RATE,
+      taxFreeTips: yearTaxFreeTips,
+      taxableTips: yearTaxableTips,
+      thresholdProgress: yearThresholdProgress,
+      isOverThreshold: yearIsOverThreshold,
     };
 
     return { q1, q2, q3, q4, yearTotal };

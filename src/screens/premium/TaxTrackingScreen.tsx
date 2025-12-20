@@ -8,14 +8,20 @@ import {
   Alert,
   TextInput,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
 import { useUserStore } from '../../store/userStore';
-import { getTaxSummary, getDeductions, addDeduction, deleteDeduction } from '../../services/api/tax';
+import { getTaxSummary, getDeductions, addDeduction, deleteDeduction, TAX_FREE_TIP_THRESHOLD } from '../../services/api/tax';
 import { Deduction } from '../../types';
 import { AppConfig } from '../../constants/config';
+import { formatCurrency } from '../../utils/formatting';
+import { generateTaxSummaryPDFHTML, getTaxSummaryFilename, TaxSummaryPDFData } from '../../services/api/export';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { supabase } from '../../services/api/supabase';
 
 export default function TaxTrackingScreen() {
   const navigation = useNavigation();
@@ -27,6 +33,7 @@ export default function TaxTrackingScreen() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showAddDeduction, setShowAddDeduction] = useState(false);
   const [showDeductionGuide, setShowDeductionGuide] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Add Deduction Form
   const [deductionDate, setDeductionDate] = useState(new Date().toISOString().split('T')[0]);
@@ -104,6 +111,125 @@ export default function TaxTrackingScreen() {
     );
   };
 
+  const handleExportTaxSummary = async () => {
+    if (!taxSummary) {
+      Alert.alert('No Data', 'Please wait for tax data to load.');
+      return;
+    }
+
+    try {
+      setExporting(true);
+
+      // Get user info
+      const { data: { user } } = await supabase.auth.getUser();
+      const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+
+      // Get tip entries for stats
+      const { data: tipEntries } = await supabase
+        .from('tip_entries')
+        .select('*')
+        .eq('user_id', user?.id)
+        .gte('date', `${selectedYear}-01-01`)
+        .lte('date', `${selectedYear}-12-31`);
+
+      const totalShifts = tipEntries?.length || 0;
+      const totalHours = tipEntries?.reduce((sum, e) => sum + (e.hours_worked || 0), 0) || 0;
+      const avgHourlyRate = totalHours > 0 ? taxSummary.yearTotal.netTipEarnings / totalHours : 0;
+
+      // Group deductions by category
+      const deductionsByCategory: { category: string; amount: number }[] = [];
+      const categoryMap = new Map<string, number>();
+      deductions.forEach(d => {
+        const cat = AppConfig.DEDUCTION_CATEGORIES.find(c => c.id === d.category)?.label || d.category;
+        categoryMap.set(cat, (categoryMap.get(cat) || 0) + d.amount);
+      });
+      categoryMap.forEach((amount, category) => {
+        deductionsByCategory.push({ category, amount });
+      });
+
+      // Build PDF data
+      const pdfData: TaxSummaryPDFData = {
+        year: selectedYear,
+        userName,
+        grossTips: taxSummary.yearTotal.totalEarnings,
+        tipOut: taxSummary.yearTotal.totalTipOut,
+        netTipEarnings: taxSummary.yearTotal.netTipEarnings,
+        taxFreeTips: taxSummary.yearTotal.taxFreeTips,
+        taxableTips: taxSummary.yearTotal.taxableTips,
+        thresholdUsed: taxSummary.yearTotal.thresholdProgress,
+        deductionsByCategory,
+        totalDeductions: taxSummary.yearTotal.totalDeductions,
+        taxableIncome: taxSummary.yearTotal.netIncome,
+        estimatedTax: taxSummary.yearTotal.estimatedTax,
+        taxRate: taxSummary.yearTotal.taxRate,
+        quarters: [
+          {
+            quarter: 1,
+            grossTips: taxSummary.q1.totalEarnings,
+            tipOut: taxSummary.q1.totalTipOut,
+            netTips: taxSummary.q1.netTipEarnings,
+            taxFreeTips: taxSummary.q1.taxFreeTips,
+            taxableTips: taxSummary.q1.taxableTips,
+            deductions: taxSummary.q1.totalDeductions,
+            estimatedTax: taxSummary.q1.estimatedTax,
+          },
+          {
+            quarter: 2,
+            grossTips: taxSummary.q2.totalEarnings,
+            tipOut: taxSummary.q2.totalTipOut,
+            netTips: taxSummary.q2.netTipEarnings,
+            taxFreeTips: taxSummary.q2.taxFreeTips,
+            taxableTips: taxSummary.q2.taxableTips,
+            deductions: taxSummary.q2.totalDeductions,
+            estimatedTax: taxSummary.q2.estimatedTax,
+          },
+          {
+            quarter: 3,
+            grossTips: taxSummary.q3.totalEarnings,
+            tipOut: taxSummary.q3.totalTipOut,
+            netTips: taxSummary.q3.netTipEarnings,
+            taxFreeTips: taxSummary.q3.taxFreeTips,
+            taxableTips: taxSummary.q3.taxableTips,
+            deductions: taxSummary.q3.totalDeductions,
+            estimatedTax: taxSummary.q3.estimatedTax,
+          },
+          {
+            quarter: 4,
+            grossTips: taxSummary.q4.totalEarnings,
+            tipOut: taxSummary.q4.totalTipOut,
+            netTips: taxSummary.q4.netTipEarnings,
+            taxFreeTips: taxSummary.q4.taxFreeTips,
+            taxableTips: taxSummary.q4.taxableTips,
+            deductions: taxSummary.q4.totalDeductions,
+            estimatedTax: taxSummary.q4.estimatedTax,
+          },
+        ],
+        totalShifts,
+        totalHours,
+        avgHourlyRate,
+      };
+
+      // Generate PDF
+      const html = generateTaxSummaryPDFHTML(pdfData);
+      const { uri } = await Print.printToFileAsync({ html });
+
+      // Share the PDF
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `${selectedYear} Tax Summary`,
+          UTI: 'com.adobe.pdf',
+        });
+      }
+    } catch (error: any) {
+      console.error('Export error:', error);
+      Alert.alert('Export Failed', error.message || 'Failed to generate tax summary PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!isPremium) {
     return (
       <View style={styles.upgradeContainer}>
@@ -126,26 +252,125 @@ export default function TaxTrackingScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Year Selector */}
-        <View style={styles.yearSelector}>
+        <View style={styles.yearSelectorRow}>
+          <View style={styles.yearSelector}>
+            <TouchableOpacity
+              onPress={() => setSelectedYear(selectedYear - 1)}
+              style={styles.yearButton}
+            >
+              <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.yearText}>{selectedYear}</Text>
+            <TouchableOpacity
+              onPress={() => setSelectedYear(selectedYear + 1)}
+              style={styles.yearButton}
+              disabled={selectedYear >= new Date().getFullYear()}
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={selectedYear >= new Date().getFullYear() ? Colors.gray400 : Colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
-            onPress={() => setSelectedYear(selectedYear - 1)}
-            style={styles.yearButton}
+            style={styles.exportButton}
+            onPress={handleExportTaxSummary}
+            disabled={exporting || loading || !taxSummary}
           >
-            <Ionicons name="chevron-back" size={24} color={Colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.yearText}>{selectedYear}</Text>
-          <TouchableOpacity
-            onPress={() => setSelectedYear(selectedYear + 1)}
-            style={styles.yearButton}
-            disabled={selectedYear >= new Date().getFullYear()}
-          >
-            <Ionicons
-              name="chevron-forward"
-              size={24}
-              color={selectedYear >= new Date().getFullYear() ? Colors.gray400 : Colors.primary}
-            />
+            {exporting ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <>
+                <Ionicons name="download-outline" size={20} color={Colors.white} />
+                <Text style={styles.exportButtonText}>PDF</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
+
+        {/* $25K Tax-Free Threshold Progress */}
+        {taxSummary && (
+          <View style={[
+            styles.thresholdCard,
+            taxSummary.yearTotal.isOverThreshold && styles.thresholdCardOver
+          ]}>
+            <View style={styles.thresholdHeader}>
+              <View style={styles.thresholdTitleRow}>
+                <Ionicons
+                  name={taxSummary.yearTotal.isOverThreshold ? "alert-circle" : "shield-checkmark"}
+                  size={24}
+                  color={taxSummary.yearTotal.isOverThreshold ? Colors.warning : Colors.success}
+                />
+                <Text style={styles.thresholdTitle}>
+                  {taxSummary.yearTotal.isOverThreshold ? "Tax-Free Threshold Exceeded" : "Tax-Free Tips Progress"}
+                </Text>
+              </View>
+              <Text style={styles.thresholdSubtitle}>
+                No Tax on Tips Act - First ${formatCurrency(TAX_FREE_TIP_THRESHOLD)} tax-free
+              </Text>
+            </View>
+
+            <View style={styles.thresholdProgressContainer}>
+              <View style={styles.thresholdProgressBar}>
+                <View
+                  style={[
+                    styles.thresholdProgressFill,
+                    { width: `${Math.min(100, taxSummary.yearTotal.thresholdProgress)}%` },
+                    taxSummary.yearTotal.isOverThreshold && styles.thresholdProgressFillOver
+                  ]}
+                />
+              </View>
+              <Text style={styles.thresholdProgressText}>
+                {taxSummary.yearTotal.thresholdProgress.toFixed(0)}%
+              </Text>
+            </View>
+
+            <View style={styles.thresholdStats}>
+              <View style={styles.thresholdStat}>
+                <Text style={styles.thresholdStatLabel}>Tax-Free Tips</Text>
+                <Text style={[styles.thresholdStatValue, styles.thresholdStatGreen]}>
+                  ${formatCurrency(taxSummary.yearTotal.taxFreeTips)}
+                </Text>
+              </View>
+              <View style={styles.thresholdStatDivider} />
+              <View style={styles.thresholdStat}>
+                <Text style={styles.thresholdStatLabel}>Taxable Tips</Text>
+                <Text style={[
+                  styles.thresholdStatValue,
+                  taxSummary.yearTotal.taxableTips > 0 && styles.thresholdStatRed
+                ]}>
+                  ${formatCurrency(taxSummary.yearTotal.taxableTips)}
+                </Text>
+              </View>
+              <View style={styles.thresholdStatDivider} />
+              <View style={styles.thresholdStat}>
+                <Text style={styles.thresholdStatLabel}>Remaining</Text>
+                <Text style={styles.thresholdStatValue}>
+                  ${formatCurrency(Math.max(0, TAX_FREE_TIP_THRESHOLD - taxSummary.yearTotal.netTipEarnings))}
+                </Text>
+              </View>
+            </View>
+
+            {taxSummary.yearTotal.isOverThreshold && (
+              <View style={styles.thresholdWarning}>
+                <Ionicons name="information-circle" size={16} color={Colors.warning} />
+                <Text style={styles.thresholdWarningText}>
+                  You've exceeded the $25K threshold. Tips above this amount ({formatCurrency(taxSummary.yearTotal.taxableTips)}) are subject to self-employment tax.
+                </Text>
+              </View>
+            )}
+
+            {!taxSummary.yearTotal.isOverThreshold && taxSummary.yearTotal.thresholdProgress >= 80 && (
+              <View style={styles.thresholdApproaching}>
+                <Ionicons name="trending-up" size={16} color={Colors.accent} />
+                <Text style={styles.thresholdApproachingText}>
+                  Approaching threshold! You have ${formatCurrency(TAX_FREE_TIP_THRESHOLD - taxSummary.yearTotal.netTipEarnings)} in tax-free tips remaining.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Year Summary Card */}
         {taxSummary && (
@@ -153,25 +378,39 @@ export default function TaxTrackingScreen() {
             <Text style={styles.summaryTitle}>💰 {selectedYear} Tax Summary</Text>
 
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Earnings</Text>
-              <Text style={styles.summaryValue}>${taxSummary.yearTotal.totalEarnings.toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>Gross Tips Earned</Text>
+              <Text style={styles.summaryValue}>${formatCurrency(taxSummary.yearTotal.totalEarnings)}</Text>
+            </View>
+
+            {taxSummary.yearTotal.totalTipOut > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Tip Out (Support Staff)</Text>
+                <Text style={[styles.summaryValue, styles.tipOutValue]}>
+                  -${formatCurrency(taxSummary.yearTotal.totalTipOut)}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Net Tip Earnings</Text>
+              <Text style={styles.summaryValue}>${formatCurrency(taxSummary.yearTotal.netTipEarnings)}</Text>
             </View>
 
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Deductions</Text>
+              <Text style={styles.summaryLabel}>Business Deductions</Text>
               <Text style={[styles.summaryValue, styles.deductionValue]}>
-                -${taxSummary.yearTotal.totalDeductions.toFixed(2)}
+                -${formatCurrency(taxSummary.yearTotal.totalDeductions)}
               </Text>
             </View>
 
             <View style={[styles.summaryRow, styles.summaryDivider]}>
-              <Text style={styles.summaryLabel}>Net Income</Text>
-              <Text style={styles.summaryValue}>${taxSummary.yearTotal.netIncome.toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>Taxable Income</Text>
+              <Text style={styles.summaryValue}>${formatCurrency(taxSummary.yearTotal.netIncome)}</Text>
             </View>
 
             <View style={[styles.summaryRow, styles.taxRow]}>
               <Text style={styles.taxLabel}>Estimated Tax (15.3%)</Text>
-              <Text style={styles.taxValue}>${taxSummary.yearTotal.estimatedTax.toFixed(2)}</Text>
+              <Text style={styles.taxValue}>${formatCurrency(taxSummary.yearTotal.estimatedTax)}</Text>
             </View>
           </View>
         )}
@@ -187,20 +426,47 @@ export default function TaxTrackingScreen() {
                 <View key={quarter} style={styles.quarterCard}>
                   <View style={styles.quarterHeader}>
                     <Text style={styles.quarterTitle}>Q{index + 1} {selectedYear}</Text>
-                    <Text style={styles.quarterTax}>${q.estimatedTax.toFixed(2)} tax</Text>
+                    <View style={styles.quarterBadges}>
+                      {q.isOverThreshold && (
+                        <View style={styles.quarterOverBadge}>
+                          <Text style={styles.quarterOverBadgeText}>Over $25K</Text>
+                        </View>
+                      )}
+                      <Text style={styles.quarterTax}>${formatCurrency(q.estimatedTax)} tax</Text>
+                    </View>
                   </View>
                   <View style={styles.quarterRow}>
-                    <Text style={styles.quarterLabel}>Earnings:</Text>
-                    <Text style={styles.quarterValue}>${q.totalEarnings.toFixed(2)}</Text>
+                    <Text style={styles.quarterLabel}>Gross Tips:</Text>
+                    <Text style={styles.quarterValue}>${formatCurrency(q.totalEarnings)}</Text>
+                  </View>
+                  {q.totalTipOut > 0 && (
+                    <View style={styles.quarterRow}>
+                      <Text style={styles.quarterLabel}>Tip Out:</Text>
+                      <Text style={[styles.quarterValue, styles.quarterTipOut]}>-${formatCurrency(q.totalTipOut)}</Text>
+                    </View>
+                  )}
+                  <View style={styles.quarterRow}>
+                    <Text style={styles.quarterLabel}>Net Tips:</Text>
+                    <Text style={styles.quarterValue}>${formatCurrency(q.netTipEarnings)}</Text>
+                  </View>
+                  <View style={styles.quarterRow}>
+                    <Text style={styles.quarterLabel}>Tax-Free:</Text>
+                    <Text style={[styles.quarterValue, styles.quarterTaxFree]}>${formatCurrency(q.taxFreeTips)}</Text>
+                  </View>
+                  <View style={styles.quarterRow}>
+                    <Text style={styles.quarterLabel}>Taxable:</Text>
+                    <Text style={[styles.quarterValue, q.taxableTips > 0 && styles.quarterTaxable]}>
+                      ${formatCurrency(q.taxableTips)}
+                    </Text>
                   </View>
                   <View style={styles.quarterRow}>
                     <Text style={styles.quarterLabel}>Deductions:</Text>
-                    <Text style={styles.quarterValue}>-${q.totalDeductions.toFixed(2)}</Text>
+                    <Text style={[styles.quarterValue, styles.quarterDeductions]}>-${formatCurrency(q.totalDeductions)}</Text>
                   </View>
-                  <View style={styles.quarterRow}>
-                    <Text style={styles.quarterLabel}>Net Income:</Text>
+                  <View style={[styles.quarterRow, styles.quarterNetRow]}>
+                    <Text style={styles.quarterLabel}>Taxable Income:</Text>
                     <Text style={[styles.quarterValue, styles.quarterNetValue]}>
-                      ${q.netIncome.toFixed(2)}
+                      ${formatCurrency(q.netIncome)}
                     </Text>
                   </View>
                 </View>
@@ -265,10 +531,39 @@ export default function TaxTrackingScreen() {
           )}
         </View>
 
+        {/* No Tax on Tips Act Info */}
+        <View style={styles.noTaxActCard}>
+          <View style={styles.noTaxActHeader}>
+            <Ionicons name="newspaper-outline" size={24} color={Colors.primary} />
+            <Text style={styles.noTaxActTitle}>No Tax on Tips Act</Text>
+          </View>
+          <Text style={styles.noTaxActText}>
+            Under the proposed 2025 "No Tax on Tips Act", the first $25,000 in tips you earn each year would be exempt from federal income tax.
+          </Text>
+          <View style={styles.noTaxActBullets}>
+            <View style={styles.noTaxActBullet}>
+              <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+              <Text style={styles.noTaxActBulletText}>First $25K in tips = tax-free</Text>
+            </View>
+            <View style={styles.noTaxActBullet}>
+              <Ionicons name="alert-circle" size={16} color={Colors.warning} />
+              <Text style={styles.noTaxActBulletText}>Tips over $25K = subject to self-employment tax (15.3%)</Text>
+            </View>
+            <View style={styles.noTaxActBullet}>
+              <Ionicons name="calendar" size={16} color={Colors.primary} />
+              <Text style={styles.noTaxActBulletText}>Threshold resets each calendar year</Text>
+            </View>
+          </View>
+          <Text style={styles.noTaxActDisclaimer}>
+            Note: This legislation is proposed for 2025. Consult a tax professional for the latest updates on tax law changes.
+          </Text>
+        </View>
+
         {/* Tax Tips */}
         <View style={styles.tipsCard}>
           <Text style={styles.tipsTitle}>💡 Tax Tips</Text>
           <Text style={styles.tipText}>
+            • Track tip earnings to know when you approach $25K{'\n'}
             • Keep receipts for all business expenses{'\n'}
             • Self-employment tax rate is 15.3%{'\n'}
             • Pay quarterly estimated taxes to avoid penalties{'\n'}
@@ -541,7 +836,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  yearSelectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   yearSelector: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -551,6 +852,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    minWidth: 80,
+  },
+  exportButtonText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   yearButton: {
     padding: 8,
@@ -980,5 +1297,202 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Threshold card styles
+  thresholdCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: Colors.success + '40',
+    gap: 16,
+  },
+  thresholdCardOver: {
+    borderColor: Colors.warning + '60',
+    backgroundColor: Colors.warning + '08',
+  },
+  thresholdHeader: {
+    gap: 4,
+  },
+  thresholdTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  thresholdTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  thresholdSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginLeft: 32,
+  },
+  thresholdProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  thresholdProgressBar: {
+    flex: 1,
+    height: 12,
+    backgroundColor: Colors.backgroundLight,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  thresholdProgressFill: {
+    height: '100%',
+    backgroundColor: Colors.success,
+    borderRadius: 6,
+  },
+  thresholdProgressFillOver: {
+    backgroundColor: Colors.warning,
+  },
+  thresholdProgressText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text,
+    width: 45,
+    textAlign: 'right',
+  },
+  thresholdStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  thresholdStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  thresholdStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: Colors.border,
+  },
+  thresholdStatLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  thresholdStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  thresholdStatGreen: {
+    color: Colors.success,
+  },
+  thresholdStatRed: {
+    color: Colors.error,
+  },
+  thresholdWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.warning + '15',
+    padding: 12,
+    borderRadius: 8,
+  },
+  thresholdWarningText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.warning,
+    lineHeight: 18,
+  },
+  thresholdApproaching: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.accent + '15',
+    padding: 12,
+    borderRadius: 8,
+  },
+  thresholdApproachingText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.accent,
+    lineHeight: 18,
+  },
+  // Tip out value style
+  tipOutValue: {
+    color: Colors.warning,
+  },
+  // Quarter card new styles
+  quarterBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quarterOverBadge: {
+    backgroundColor: Colors.warning + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  quarterOverBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.warning,
+  },
+  quarterTipOut: {
+    color: Colors.warning,
+  },
+  quarterTaxFree: {
+    color: Colors.success,
+  },
+  quarterTaxable: {
+    color: Colors.error,
+  },
+  quarterDeductions: {
+    color: Colors.success,
+  },
+  quarterNetRow: {
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  // No Tax on Tips Act card styles
+  noTaxActCard: {
+    backgroundColor: Colors.primary + '10',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
+    gap: 12,
+  },
+  noTaxActHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  noTaxActTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  noTaxActText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: Colors.text,
+  },
+  noTaxActBullets: {
+    gap: 8,
+  },
+  noTaxActBullet: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  noTaxActBulletText: {
+    fontSize: 14,
+    color: Colors.text,
+  },
+  noTaxActDisclaimer: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 });

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { lightHaptic } from '../../utils/haptics';
+import { lightHaptic, errorHaptic } from '../../utils/haptics';
+import { useNavigation } from '@react-navigation/native';
 
 export interface QuickAction {
   id: string;
@@ -11,6 +12,7 @@ export interface QuickAction {
   onPress: () => void;
   color?: string;
   disabled?: boolean;
+  premiumFeature?: boolean; // If true, shows premium upsell when disabled
 }
 
 interface QuickActionsRowProps {
@@ -18,6 +20,30 @@ interface QuickActionsRowProps {
 }
 
 export default function QuickActionsRow({ actions }: QuickActionsRowProps) {
+  const navigation = useNavigation();
+
+  const handlePress = (action: QuickAction) => {
+    if (action.disabled && action.premiumFeature) {
+      // Show premium upsell for disabled premium features
+      errorHaptic();
+      Alert.alert(
+        '✨ Premium Feature',
+        `${action.label} is a premium feature. Upgrade to TipFly Pro to unlock all features and maximize your earnings insights!`,
+        [
+          { text: 'Maybe Later', style: 'cancel' },
+          {
+            text: 'Upgrade Now',
+            onPress: () => navigation.navigate('Upgrade' as never),
+          },
+        ]
+      );
+      return;
+    }
+
+    lightHaptic();
+    action.onPress();
+  };
+
   return (
     <ScrollView
       horizontal
@@ -28,11 +54,8 @@ export default function QuickActionsRow({ actions }: QuickActionsRowProps) {
         <TouchableOpacity
           key={action.id}
           style={[styles.actionButton, action.disabled && styles.actionButtonDisabled]}
-          onPress={() => {
-            lightHaptic();
-            action.onPress();
-          }}
-          disabled={action.disabled}
+          onPress={() => handlePress(action)}
+          disabled={action.disabled && !action.premiumFeature}
           activeOpacity={0.7}
         >
           <View

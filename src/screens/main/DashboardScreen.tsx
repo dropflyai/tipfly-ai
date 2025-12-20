@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -192,6 +191,7 @@ export default function DashboardScreen() {
       label: 'Goals',
       onPress: () => navigation.navigate('Goals' as never),
       disabled: !isPremium,
+      premiumFeature: true,
     },
     {
       id: 'export',
@@ -199,6 +199,7 @@ export default function DashboardScreen() {
       label: 'Export',
       onPress: () => navigation.navigate('ExportReports' as never),
       disabled: !isPremium,
+      premiumFeature: true,
     },
   ];
 
@@ -211,7 +212,12 @@ export default function DashboardScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Home</Text>
+      </View>
+
       <Animated.View
         style={{
           flex: 1,
@@ -386,7 +392,7 @@ export default function DashboardScreen() {
           )}
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -394,6 +400,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: Colors.backgroundSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderBlue,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.text,
   },
   loadingContainer: {
     flex: 1,

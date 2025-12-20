@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Shadows } from '../../constants/colors';
 
 interface WeeklyTrendChartProps {
@@ -13,8 +13,22 @@ export default function WeeklyTrendChart({ data, labels, maxValue }: WeeklyTrend
   const max = maxValue || Math.max(...data, 1);
   const dayLabels = labels || ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+  // Check if there's any data
+  const hasData = data.some(value => value > 0);
+
   // Find the best day (highest value)
   const maxIndex = data.indexOf(Math.max(...data));
+
+  // Show empty state if no data
+  if (!hasData) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="bar-chart-outline" size={32} color={Colors.textSecondary} />
+        <Text style={styles.emptyTitle}>No tips logged yet</Text>
+        <Text style={styles.emptySubtitle}>Start tracking to see your weekly trends</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -104,5 +118,22 @@ const styles = StyleSheet.create({
   labelBest: {
     color: Colors.gold,
     fontWeight: '700',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });

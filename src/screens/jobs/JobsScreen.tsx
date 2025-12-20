@@ -26,6 +26,7 @@ import { formatCurrency } from '../../utils/formatting';
 import { useUserStore } from '../../store/userStore';
 import CreateJobModal from './CreateJobModal';
 import EditJobModal from './EditJobModal';
+import PositionsModal from './PositionsModal';
 
 const FREE_JOB_LIMIT = 1;
 
@@ -38,6 +39,7 @@ export default function JobsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [positionsModalVisible, setPositionsModalVisible] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   useEffect(() => {
@@ -91,6 +93,12 @@ export default function JobsScreen() {
     lightHaptic();
     setSelectedJob(job);
     setEditModalVisible(true);
+  };
+
+  const handleManagePositions = (job: Job) => {
+    lightHaptic();
+    setSelectedJob(job);
+    setPositionsModalVisible(true);
   };
 
   const handleJobCreated = (newJob: Job) => {
@@ -304,6 +312,14 @@ export default function JobsScreen() {
 
                   {/* Quick Actions */}
                   <View style={styles.actionsContainer}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleManagePositions(job)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="people-outline" size={16} color={Colors.primary} />
+                      <Text style={styles.actionButtonText}>Positions</Text>
+                    </TouchableOpacity>
                     {!job.is_primary && (
                       <TouchableOpacity
                         style={styles.actionButton}
@@ -353,6 +369,18 @@ export default function JobsScreen() {
             setEditModalVisible(false);
             setSelectedJob(null);
             loadJobs();
+          }}
+        />
+      )}
+
+      {/* Positions Modal */}
+      {selectedJob && (
+        <PositionsModal
+          visible={positionsModalVisible}
+          job={selectedJob}
+          onClose={() => {
+            setPositionsModalVisible(false);
+            setSelectedJob(null);
           }}
         />
       )}

@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, GradientColors, Shadows } from '../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { mediumHaptic } from '../../utils/haptics';
@@ -21,14 +22,15 @@ interface LandingScreenProps {
 }
 
 export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps) {
+  const insets = useSafeAreaInsets();
+
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  const graphAnim = useRef(new Animated.Value(0)).current;
-  const bar1Anim = useRef(new Animated.Value(0)).current;
-  const bar2Anim = useRef(new Animated.Value(0)).current;
-  const bar3Anim = useRef(new Animated.Value(0)).current;
-  const bar4Anim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const predictionSlideAnim = useRef(new Animated.Value(20)).current;
+  const predictionFadeAnim = useRef(new Animated.Value(0)).current;
+  const amountAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Fade in content
@@ -45,13 +47,48 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
       }),
     ]).start();
 
-    // Animate graph bars sequentially
-    Animated.stagger(150, [
-      Animated.spring(bar1Anim, { toValue: 1, friction: 6, useNativeDriver: true }),
-      Animated.spring(bar2Anim, { toValue: 1, friction: 6, useNativeDriver: true }),
-      Animated.spring(bar3Anim, { toValue: 1, friction: 6, useNativeDriver: true }),
-      Animated.spring(bar4Anim, { toValue: 1, friction: 6, useNativeDriver: true }),
-    ]).start();
+    // Animate prediction card after initial fade
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.spring(predictionSlideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(predictionFadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Animate the amount counting up
+      Animated.timing(amountAnim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: false,
+      }).start();
+    }, 400);
+
+    // Continuous pulse for AI brain icon
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+
+    return () => pulse.stop();
   }, []);
 
   const handleSignUp = () => {
@@ -63,6 +100,12 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
     mediumHaptic();
     onLogin();
   };
+
+  // Interpolate amount for counting animation
+  const displayAmount = amountAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 142],
+  });
 
   return (
     <LinearGradient
@@ -79,109 +122,124 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
+            paddingTop: insets.top + 24,
+            paddingBottom: Math.max(insets.bottom, 20) + 12,
           },
         ]}
       >
-        {/* Animated Graph Visual */}
-        <View style={styles.graphContainer}>
-          <View style={styles.graphBars}>
+        {/* Top spacer - pushes content down slightly */}
+        <View style={{ flex: 1 }} />
+
+        {/* AI Prediction Card Visual */}
+        <Animated.View
+          style={[
+            styles.predictionCard,
+            {
+              opacity: predictionFadeAnim,
+              transform: [{ translateY: predictionSlideAnim }],
+            },
+          ]}
+        >
+          <View style={styles.predictionHeader}>
             <Animated.View
               style={[
-                styles.graphBar,
-                styles.bar1,
-                { transform: [{ scaleY: bar1Anim }] }
+                styles.aiIconContainer,
+                { transform: [{ scale: pulseAnim }] },
               ]}
-            />
-            <Animated.View
-              style={[
-                styles.graphBar,
-                styles.bar2,
-                { transform: [{ scaleY: bar2Anim }] }
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.graphBar,
-                styles.bar3,
-                { transform: [{ scaleY: bar3Anim }] }
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.graphBar,
-                styles.bar4,
-                { transform: [{ scaleY: bar4Anim }] }
-              ]}
-            />
+            >
+              <Ionicons name="sparkles" size={24} color={Colors.gold} />
+            </Animated.View>
+            <View>
+              <Text style={styles.predictionLabel}>AI Prediction</Text>
+              <Text style={styles.predictionDay}>Friday Dinner</Text>
+            </View>
           </View>
-          <View style={styles.trendLine}>
-            <Ionicons name="trending-up" size={32} color={Colors.primary} />
+          <View style={styles.predictionAmount}>
+            <Text style={styles.predictionDollar}>$</Text>
+            <Animated.Text style={styles.predictionValue}>
+              {displayAmount.interpolate({
+                inputRange: [0, 142],
+                outputRange: ['0', '142'],
+              })}
+            </Animated.Text>
           </View>
-        </View>
+          <View style={styles.predictionMeta}>
+            <View style={styles.confidenceBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+              <Text style={styles.confidenceText}>87% confidence</Text>
+            </View>
+            <Text style={styles.predictionRange}>$120 - $165 range</Text>
+          </View>
+        </Animated.View>
 
         {/* Main Headline */}
-        <Text style={styles.headline}>Stop guessing.</Text>
-        <Text style={styles.headlineAccent}>Start tracking.</Text>
+        <Text style={styles.headline}>Know Your Best Shifts</Text>
+        <Text style={styles.headlineAccent}>Before You Work Them</Text>
 
         {/* Subheadline */}
         <Text style={styles.subheadline}>
-          Know exactly what you earn. Predict your income. Earn more.
+          AI predicts your earnings so you can plan your schedule and budget with confidence.
         </Text>
 
         {/* Quick Value Props */}
         <View style={styles.valueProps}>
           <View style={styles.valueProp}>
-            <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={14} color={Colors.background} />
+            <View style={[styles.checkCircle, styles.checkCircleGold]}>
+              <Ionicons name="sparkles" size={12} color={Colors.background} />
             </View>
-            <Text style={styles.valuePropText}>AI-powered predictions</Text>
+            <Text style={styles.valuePropText}>AI predicts your best days</Text>
           </View>
           <View style={styles.valueProp}>
             <View style={styles.checkCircle}>
               <Ionicons name="checkmark" size={14} color={Colors.background} />
             </View>
-            <Text style={styles.valuePropText}>Track tips in seconds</Text>
+            <Text style={styles.valuePropText}>See your real hourly rate</Text>
           </View>
           <View style={styles.valueProp}>
             <View style={styles.checkCircle}>
               <Ionicons name="checkmark" size={14} color={Colors.background} />
             </View>
-            <Text style={styles.valuePropText}>Team tip pooling</Text>
+            <Text style={styles.valuePropText}>Tax-ready yearly records</Text>
           </View>
         </View>
-      </Animated.View>
 
-      {/* CTA Buttons */}
-      <View style={styles.buttonContainer}>
-        {/* Primary CTA - Sign Up */}
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleSignUp}
-          activeOpacity={0.9}
-        >
-          <LinearGradient
-            colors={GradientColors.primary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.primaryButtonGradient}
+        {/* Bottom spacer - larger to give more space before buttons */}
+        <View style={{ flex: 1.5 }} />
+
+        {/* CTA Buttons - now inside content */}
+        <View style={styles.buttonContainer}>
+          {/* Primary CTA - Sign Up */}
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleSignUp}
+            activeOpacity={0.9}
           >
-            <Text style={styles.primaryButtonText}>Get Started Free</Text>
-            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={GradientColors.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryButtonGradient}
+            >
+              <Text style={styles.primaryButtonText}>Get Started Free</Text>
+              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
 
-        {/* Secondary CTA - Login */}
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={handleLogin}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.secondaryButtonText}>I already have an account</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Secondary CTA - Login */}
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleLogin}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.secondaryButtonText}>I already have an account</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Footer */}
-      <Text style={styles.footer}>Free to use. No credit card required.</Text>
+        {/* Footer */}
+        <Text style={styles.footer}>
+          Free to use. No credit card required.
+        </Text>
+      </Animated.View>
     </LinearGradient>
   );
 }
@@ -193,74 +251,114 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 32,
   },
-  graphContainer: {
-    width: 200,
-    height: 120,
-    marginBottom: 40,
-    position: 'relative',
+  // AI Prediction Card
+  predictionCard: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+    ...Shadows.glowGoldSubtle,
   },
-  graphBars: {
+  predictionHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    height: 100,
+    alignItems: 'center',
     gap: 12,
+    marginBottom: 16,
   },
-  graphBar: {
-    width: 36,
-    borderRadius: 8,
-    transformOrigin: 'bottom',
+  aiIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bar1: {
-    height: 40,
-    backgroundColor: 'rgba(0, 168, 232, 0.3)',
+  predictionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  bar2: {
-    height: 55,
-    backgroundColor: 'rgba(0, 168, 232, 0.5)',
+  predictionDay: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 2,
   },
-  bar3: {
-    height: 70,
-    backgroundColor: 'rgba(0, 168, 232, 0.7)',
+  predictionAmount: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
-  bar4: {
-    height: 95,
-    backgroundColor: Colors.primary,
-    ...Shadows.glowBlueSubtle,
+  predictionDollar: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 4,
   },
-  trendLine: {
-    position: 'absolute',
-    top: 0,
-    right: 20,
+  predictionValue: {
+    fontSize: 56,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -2,
+  },
+  predictionMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  confidenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  confidenceText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.success,
+  },
+  predictionRange: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
   },
   headline: {
-    fontSize: 42,
+    fontSize: 36,
     fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -1,
   },
   headlineAccent: {
-    fontSize: 42,
+    fontSize: 36,
     fontWeight: '800',
     color: Colors.primary,
     textAlign: 'center',
     letterSpacing: -1,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   subheadline: {
-    fontSize: 18,
+    fontSize: 17,
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
-    lineHeight: 26,
-    marginBottom: 32,
-    paddingHorizontal: 16,
+    lineHeight: 24,
+    marginBottom: 20,
+    paddingHorizontal: 8,
   },
   valueProps: {
-    gap: 12,
+    gap: 10,
+    marginBottom: 8,
+    alignItems: 'center',
   },
   valueProp: {
     flexDirection: 'row',
@@ -275,19 +373,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  checkCircleGold: {
+    backgroundColor: Colors.gold,
+  },
   valuePropText: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
   buttonContainer: {
-    paddingHorizontal: 32,
-    paddingBottom: 24,
+    width: '100%',
     gap: 12,
+    alignItems: 'center',
+    marginTop: 8,
   },
   primaryButton: {
     borderRadius: 16,
     overflow: 'hidden',
+    width: '100%',
     ...Shadows.buttonBlue,
   },
   primaryButtonGradient: {
@@ -316,6 +419,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.4)',
-    paddingBottom: 40,
+    marginTop: 16,
   },
 });
