@@ -40,9 +40,15 @@ serve(async (req) => {
     );
 
     // Generate email confirmation link for signup
+    // Redirect to our custom verify-success page after verification
+    const redirectTo = `${Deno.env.get('SUPABASE_URL')}/functions/v1/verify-success`;
+
     const { data: otpData, error: otpError } = await supabaseClient.auth.admin.generateLink({
       type: 'signup',
       email: email,
+      options: {
+        redirectTo: redirectTo,
+      },
     });
 
     if (otpError) {
