@@ -60,11 +60,12 @@ jobs:
 
       - name: Decode signing certificate
         run: |
-          echo "${{ secrets.IOS_DIST_CERT_BASE64 }}" | base64 --decode > ~/credentials/distribution.p12
+          printf '%s' "${{ secrets.IOS_DIST_CERT_BASE64 }}" | base64 --decode > ~/credentials/distribution.p12
+          echo "Certificate file size: $(wc -c < ~/credentials/distribution.p12) bytes"
 
       - name: Decode provisioning profile
         run: |
-          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/credentials/profile.mobileprovision
+          printf '%s' "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/credentials/profile.mobileprovision
 
       - name: Install signing certificate to keychain
         run: |
