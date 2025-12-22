@@ -23,7 +23,7 @@ export const validatePassword = (password: string): { valid: boolean; error?: st
 };
 
 export const validateTipAmount = (amount: number): boolean => {
-  return amount >= 0 && amount <= 10000; // Max $10K per shift (reasonable limit)
+  return amount >= 0 && amount <= 100000; // Max $100K per shift
 };
 
 export const validateHours = (hours: number): boolean => {
@@ -180,8 +180,8 @@ export const validateParsedAIOutput = (data: {
       errors.push('Tips earned must be a valid number');
     } else if (data.tips_earned < 0) {
       errors.push('Tips earned cannot be negative');
-    } else if (data.tips_earned > 10000) {
-      errors.push('Tips earned exceeds maximum ($10,000)');
+    } else if (data.tips_earned > 100000) {
+      errors.push('Tips earned exceeds maximum ($100,000)');
     }
   }
 

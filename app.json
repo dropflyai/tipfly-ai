@@ -14,10 +14,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tipflyai.app",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan receipts for automatic tip entry.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and upload receipt images.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to let you add tips using your voice.",
+        "NSMicrophoneUsageDescription": "This app uses the microphone for voice input to quickly log your tips.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -33,7 +35,8 @@
         "WRITE_EXTERNAL_STORAGE",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -42,6 +45,13 @@
         {
           "icon": "./assets/icon.png",
           "color": "#00A8E8"
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "TipFly needs microphone access for voice input.",
+          "speechRecognitionPermission": "TipFly uses speech recognition to log tips by voice."
         }
       ]
     ],

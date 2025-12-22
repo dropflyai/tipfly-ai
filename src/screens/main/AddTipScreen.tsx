@@ -31,7 +31,7 @@ import { Job, Position } from '../../types';
 import { getPrimaryJob } from '../../services/api/jobs';
 import { getPositionsByJob, getDefaultPosition } from '../../services/api/positions';
 import JobSelector from '../../components/common/JobSelector';
-import CelebrationModal from '../../components/CelebrationModal';
+import VoiceInputButton from '../../components/common/VoiceInputButton';
 
 interface AddTipScreenProps {
   onClose?: () => void;
@@ -62,6 +62,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
   const [conversationalInput, setConversationalInput] = useState('');
   const [parsedEntry, setParsedEntry] = useState<ParsedTipEntry | null>(null);
   const [parsing, setParsing] = useState(false);
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
 
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -69,11 +70,9 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
   const [scaleAnim] = useState(new Animated.Value(0));
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  // Tip celebration state
+  // Tip count tracking
   const incrementTipCount = useAnimationStore((state) => state.incrementTipCount);
   const loadTipCount = useAnimationStore((state) => state.loadTipCount);
-  const [showTipCelebration, setShowTipCelebration] = useState(false);
-  const [celebrationMilestone, setCelebrationMilestone] = useState<number | null>(null);
 
   // Load primary job and tip count on mount
   React.useEffect(() => {
@@ -149,9 +148,18 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     setEntryMode('ai');
   };
 
+  // Handle voice transcript
+  const handleVoiceTranscript = (text: string) => {
+    setConversationalInput(text);
+    // Auto-trigger parsing after voice input
+    setTimeout(() => {
+      handleAIParseWithInput(text);
+    }, 300);
+  };
+
   // Handle AI parsing with security guardrails
-  const handleAIParse = async () => {
-    if (!conversationalInput.trim()) {
+  const handleAIParseWithInput = async (input: string) => {
+    if (!input.trim()) {
       errorHaptic();
       Alert.alert('Empty Input', 'Please describe your shift');
       return;
@@ -175,7 +183,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     }
 
     // SECURITY: Detect spam/repeated inputs
-    if (detectSpamInput(userId, conversationalInput)) {
+    if (detectSpamInput(userId, input)) {
       errorHaptic();
       Alert.alert(
         'Suspicious Activity',
@@ -189,7 +197,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     lightHaptic();
 
     try {
-      const result = await parseConversationalEntry(conversationalInput);
+      const result = await parseConversationalEntry(input);
       setParsedEntry(result);
 
       // Auto-fill the form fields
@@ -232,6 +240,11 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     }
   };
 
+  // Handle AI parsing (wrapper for button click)
+  const handleAIParse = () => {
+    handleAIParseWithInput(conversationalInput);
+  };
+
   const handleSave = async () => {
     // Validation
     if (!clockIn || !clockOut) {
@@ -266,7 +279,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
 
     if (isNaN(tips) || !validateTipAmount(tips)) {
       errorHaptic();
-      Alert.alert('Invalid Tips', 'Tip amount must be between $0 and $10,000');
+      Alert.alert('Invalid Tips', 'Tip amount must be between $0 and $100,000');
       return;
     }
 
@@ -311,30 +324,24 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         setSelectedPosition(defaultPos || null);
       }
 
-      // Check for tip milestone celebration
-      const { shouldCelebrate, milestone } = await incrementTipCount();
+      // Track tip count for milestones (but no video celebration)
+      await incrementTipCount();
 
-      if (shouldCelebrate && milestone) {
-        // Show video celebration for milestone
-        setCelebrationMilestone(milestone);
-        setShowTipCelebration(true);
-      } else {
-        // Show regular success modal with animation
-        setShowSuccessModal(true);
-        Animated.parallel([
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            tension: 50,
-            friction: 7,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
+      // Show regular success modal with animation
+      setShowSuccessModal(true);
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } catch (error: any) {
       errorHaptic();
       Alert.alert('Error', error.message || 'Failed to save tip entry');
@@ -364,18 +371,6 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     if (selectedTime) {
       selectionHaptic();
       setClockOut(selectedTime);
-    }
-  };
-
-  const handleCloseTipCelebration = () => {
-    setShowTipCelebration(false);
-    setCelebrationMilestone(null);
-
-    // Navigate or close after celebration
-    if (onClose) {
-      onClose();
-    } else {
-      navigation.navigate('Home' as never);
     }
   };
 
@@ -504,6 +499,26 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
                 <Ionicons name="chatbubble-ellipses" size={24} color={Colors.primary} />
                 <Text style={styles.aiHeaderText}>Describe your shift</Text>
               </View>
+
+              {/* Voice Input Section */}
+              <View style={styles.voiceInputSection}>
+                <VoiceInputButton
+                  onTranscript={handleVoiceTranscript}
+                  onListeningChange={setIsVoiceListening}
+                  disabled={parsing}
+                  size="large"
+                />
+                <Text style={styles.voiceInputLabel}>
+                  {isVoiceListening ? 'Listening...' : 'Tap to speak'}
+                </Text>
+              </View>
+
+              <View style={styles.orDivider}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>or type</Text>
+                <View style={styles.orLine} />
+              </View>
+
               <TextInput
                 style={styles.aiInput}
                 placeholder="e.g., Made $85 in 5 hours tonight, busy dinner shift..."
@@ -515,7 +530,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
                 maxLength={300}
               />
               <Text style={styles.aiHelperText}>
-                💬 Just type naturally - AI will extract the details!
+                Just describe your shift - AI will extract the details!
               </Text>
               {parsedEntry && (
                 <View style={styles.parsedResultContainer}>
@@ -844,19 +859,6 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
           </>
         )}
       </ScrollView>
-
-      {/* Tip Milestone Celebration Modal */}
-      <CelebrationModal
-        visible={showTipCelebration}
-        type="tip"
-        title={celebrationMilestone === 1 ? 'First Tip Logged!' : `${celebrationMilestone} Tips!`}
-        subtitle={
-          celebrationMilestone === 1
-            ? 'You\'re on your way!'
-            : `You've logged ${celebrationMilestone} tips. Keep it up!`
-        }
-        onClose={handleCloseTipCelebration}
-      />
 
       {/* Success Modal */}
       <Modal
@@ -1214,6 +1216,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
+  },
+  voiceInputSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  voiceInputLabel: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  orDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 8,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  orText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   parsedResultContainer: {
     backgroundColor: Colors.success + '10',
