@@ -314,9 +314,6 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
       // Success!
       successHaptic();
 
-      // Save tip data for modal
-      setSavedTipData({ tips, hours });
-
       // Clear form
       setClockIn(null);
       setClockOut(null);
@@ -330,24 +327,26 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         setSelectedPosition(defaultPos || null);
       }
 
-      // Track tip count for milestones (but no video celebration)
+      // Track tip count for milestones
       await incrementTipCount();
 
-      // Show regular success modal with animation
-      setShowSuccessModal(true);
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Show success alert and navigate back to dashboard
+      Alert.alert(
+        'Tip Logged! 🎉',
+        `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (onClose) {
+                onClose();
+              } else {
+                navigation.navigate('Home' as never);
+              }
+            },
+          },
+        ]
+      );
     } catch (error: any) {
       errorHaptic();
 

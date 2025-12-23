@@ -12,12 +12,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from 'expo-speech-recognition';
 import { Colors, GradientColors } from '../../constants/colors';
 import { lightHaptic, mediumHaptic, successHaptic, errorHaptic } from '../../utils/haptics';
+
+// Safely import expo-speech-recognition (not available in Expo Go)
+let ExpoSpeechRecognitionModule: any = null;
+let useSpeechRecognitionEvent: any = () => {};
+
+try {
+  const speechRecognition = require('expo-speech-recognition');
+  ExpoSpeechRecognitionModule = speechRecognition.ExpoSpeechRecognitionModule;
+  useSpeechRecognitionEvent = speechRecognition.useSpeechRecognitionEvent;
+} catch (error) {
+  console.warn('[VoiceInput] expo-speech-recognition not available (requires development build)');
+}
 
 interface VoiceInputButtonProps {
   onTranscript: (text: string) => void;
@@ -122,6 +130,10 @@ export default function VoiceInputButton({
   });
 
   const checkPermissions = async () => {
+    if (!ExpoSpeechRecognitionModule) {
+      setHasPermission(false);
+      return;
+    }
     try {
       const result = await ExpoSpeechRecognitionModule.getPermissionsAsync();
       setHasPermission(result.granted);
@@ -132,6 +144,9 @@ export default function VoiceInputButton({
   };
 
   const requestPermissions = async (): Promise<boolean> => {
+    if (!ExpoSpeechRecognitionModule) {
+      return false;
+    }
     try {
       const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       setHasPermission(result.granted);
@@ -144,6 +159,16 @@ export default function VoiceInputButton({
 
   const startListening = async () => {
     if (disabled) return;
+
+    // Check if speech recognition is available
+    if (!ExpoSpeechRecognitionModule) {
+      Alert.alert(
+        'Voice Input Unavailable',
+        'Voice input requires a development build. It\'s not available in Expo Go.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
     lightHaptic();
 
@@ -183,7 +208,9 @@ export default function VoiceInputButton({
 
   const stopListening = useCallback(async () => {
     try {
-      await ExpoSpeechRecognitionModule.stop();
+      if (ExpoSpeechRecognitionModule) {
+        await ExpoSpeechRecognitionModule.stop();
+      }
     } catch (error) {
       console.error('[VoiceInput] Stop error:', error);
     }
@@ -195,7 +222,9 @@ export default function VoiceInputButton({
   const cancelListening = async () => {
     lightHaptic();
     try {
-      await ExpoSpeechRecognitionModule.abort();
+      if (ExpoSpeechRecognitionModule) {
+        await ExpoSpeechRecognitionModule.abort();
+      }
     } catch (error) {
       console.error('[VoiceInput] Abort error:', error);
     }

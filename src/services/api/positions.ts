@@ -16,7 +16,14 @@ export const getPositionsByJob = async (jobId: string): Promise<Position[]> => {
     .order('is_default', { ascending: false })
     .order('name', { ascending: true });
 
-  if (error) throw error;
+  // If positions table doesn't exist, return empty array
+  if (error) {
+    if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+      console.warn('[positions] Positions table not found, returning empty array');
+      return [];
+    }
+    throw error;
+  }
   return data || [];
 };
 
@@ -32,7 +39,14 @@ export const getAllPositions = async (): Promise<Position[]> => {
     .eq('user_id', user.id)
     .order('name', { ascending: true });
 
-  if (error) throw error;
+  // If positions table doesn't exist, return empty array
+  if (error) {
+    if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+      console.warn('[positions] Positions table not found, returning empty array');
+      return [];
+    }
+    throw error;
+  }
   return data || [];
 };
 
@@ -63,8 +77,12 @@ export const getDefaultPosition = async (jobId: string): Promise<Position | null
     .single();
 
   if (error) {
-    // If no default position found, return null
+    // If no default position found or table doesn't exist, return null
     if (error.code === 'PGRST116') return null;
+    if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+      console.warn('[positions] Positions table not found, returning null');
+      return null;
+    }
     throw error;
   }
 
