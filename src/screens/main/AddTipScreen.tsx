@@ -301,7 +301,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         tip_out: tipOutAmount && tipOutAmount > 0 ? tipOutAmount : undefined,
         shift_type: shiftType as any,
         job_id: selectedJob?.id,
-        position_id: selectedPosition?.id,
+        ...(selectedPosition?.id && { position_id: selectedPosition.id }),
         notes: cleanNotes || undefined,
       });
 
@@ -344,7 +344,38 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
       ]).start();
     } catch (error: any) {
       errorHaptic();
-      Alert.alert('Error', error.message || 'Failed to save tip entry');
+
+      // Parse error and show user-friendly message
+      let errorTitle = 'Unable to Save';
+      let errorMessage = 'We couldn\'t save your tip entry. Please try again.';
+
+      if (error.message) {
+        const msg = error.message.toLowerCase();
+
+        // Check for common database errors
+        if (msg.includes('position_id') || msg.includes('position')) {
+          errorTitle = 'Position Issue';
+          errorMessage = 'There was an issue with the position selected. Please try selecting a different position or leave it blank.';
+        } else if (msg.includes('job_id') || msg.includes('job')) {
+          errorTitle = 'Job Issue';
+          errorMessage = 'There was an issue with the job selected. Please try selecting a different job.';
+        } else if (msg.includes('network') || msg.includes('timeout') || msg.includes('fetch')) {
+          errorTitle = 'Connection Issue';
+          errorMessage = 'Please check your internet connection and try again.';
+        } else if (msg.includes('duplicate') || msg.includes('unique')) {
+          errorTitle = 'Duplicate Entry';
+          errorMessage = 'It looks like this tip entry already exists. Please check your recent entries.';
+        } else if (msg.includes('permission') || msg.includes('unauthorized')) {
+          errorTitle = 'Permission Error';
+          errorMessage = 'You don\'t have permission to perform this action. Please try logging in again.';
+        } else if (msg.includes('required') || msg.includes('not null')) {
+          errorTitle = 'Missing Information';
+          errorMessage = 'Please make sure all required fields are filled out correctly.';
+        }
+      }
+
+      Alert.alert(errorTitle, errorMessage);
+      console.error('[AddTipScreen] Save error:', error);
     } finally {
       setLoading(false);
     }
