@@ -68,8 +68,6 @@ jobs:
           printf '%s' "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/credentials/profile.mobileprovision
 
       - name: Install signing certificate to keychain
-        env:
-          CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
         run: |
           # Create temporary keychain
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
@@ -79,14 +77,18 @@ jobs:
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          # Debug: show password length
-          echo "Password length: ${#CERT_PASSWORD}"
+          # Write password to temp file to avoid shell escaping issues
+          printf '%s' '${{ secrets.IOS_DIST_CERT_PASSWORD }}' > /tmp/cert_pass.txt
+          CERT_PASS=$(cat /tmp/cert_pass.txt)
+          echo "Password length: ${#CERT_PASS}"
 
-          # Import certificate
+          # Import certificate using password from file
           security import ~/credentials/distribution.p12 \
-            -P "$CERT_PASSWORD" \
+            -P "$CERT_PASS" \
             -A -t cert -f pkcs12 \
             -k "$KEYCHAIN_PATH"
+
+          rm -f /tmp/cert_pass.txt
 
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
