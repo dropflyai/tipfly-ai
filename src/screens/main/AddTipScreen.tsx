@@ -291,19 +291,25 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     // Parse tip out amount
     const tipOutAmount = tipOut ? parseFloat(tipOut) : undefined;
 
+    // Build the tip entry data
+    const tipEntryData = {
+      date: date.toISOString().split('T')[0],
+      clock_in: clockIn.toISOString(),
+      clock_out: clockOut.toISOString(),
+      hours_worked: hours,
+      tips_earned: tips,
+      tip_out: tipOutAmount && tipOutAmount > 0 ? tipOutAmount : undefined,
+      shift_type: shiftType as any,
+      job_id: selectedJob?.id,
+      ...(selectedPosition?.id && { position_id: selectedPosition.id }),
+      notes: cleanNotes || undefined,
+    };
+
+    // Log the data being sent
+    console.log('[AddTipScreen] Submitting tip entry:', JSON.stringify(tipEntryData, null, 2));
+
     try {
-      await createTipEntry({
-        date: date.toISOString().split('T')[0],
-        clock_in: clockIn.toISOString(),
-        clock_out: clockOut.toISOString(),
-        hours_worked: hours,
-        tips_earned: tips,
-        tip_out: tipOutAmount && tipOutAmount > 0 ? tipOutAmount : undefined,
-        shift_type: shiftType as any,
-        job_id: selectedJob?.id,
-        ...(selectedPosition?.id && { position_id: selectedPosition.id }),
-        notes: cleanNotes || undefined,
-      });
+      await createTipEntry(tipEntryData);
 
       // Success!
       successHaptic();
@@ -345,6 +351,11 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     } catch (error: any) {
       errorHaptic();
 
+      // Log full error for debugging
+      console.error('[AddTipScreen] Save error:', error);
+      console.error('[AddTipScreen] Error message:', error?.message);
+      console.error('[AddTipScreen] Error details:', JSON.stringify(error, null, 2));
+
       // Parse error and show user-friendly message
       let errorTitle = 'Unable to Save';
       let errorMessage = 'We couldn\'t save your tip entry. Please try again.';
@@ -365,7 +376,7 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         } else if (msg.includes('duplicate') || msg.includes('unique')) {
           errorTitle = 'Duplicate Entry';
           errorMessage = 'It looks like this tip entry already exists. Please check your recent entries.';
-        } else if (msg.includes('permission') || msg.includes('unauthorized')) {
+        } else if (msg.includes('permission') || msg.includes('unauthorized') || msg.includes('policy')) {
           errorTitle = 'Permission Error';
           errorMessage = 'You don\'t have permission to perform this action. Please try logging in again.';
         } else if (msg.includes('required') || msg.includes('not null')) {
@@ -374,8 +385,12 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
         }
       }
 
+      // In development, show actual error
+      if (__DEV__) {
+        errorMessage = `${errorMessage}\n\nDebug: ${error.message || 'Unknown error'}`;
+      }
+
       Alert.alert(errorTitle, errorMessage);
-      console.error('[AddTipScreen] Save error:', error);
     } finally {
       setLoading(false);
     }
