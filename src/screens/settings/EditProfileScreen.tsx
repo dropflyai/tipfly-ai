@@ -1,5 +1,5 @@
 // Edit Profile Screen - Update user profile information
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   ActionSheetIOS,
   Platform,
+  AppState,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,8 +28,69 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [showJobPicker, setShowJobPicker] = useState(false);
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
 
   const jobTypes = AppConfig.JOB_TYPES;
+
+  // Check email verification status
+  useEffect(() => {
+    checkEmailVerification();
+
+    // Re-check when app comes to foreground (user might have verified in browser)
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkEmailVerification();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const checkEmailVerification = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser?.email_confirmed_at) {
+        setIsEmailVerified(true);
+      }
+    } catch (error) {
+      console.error('[EditProfile] Error checking verification:', error);
+    }
+  };
+
+  const handleSendVerificationEmail = async () => {
+    if (!email) {
+      Alert.alert('Error', 'No email address found');
+      return;
+    }
+
+    setSendingVerification(true);
+    try {
+      // Call Edge Function to send verification email
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'send-verification-email',
+        {
+          body: {
+            email: email,
+            userId: user?.id,
+          },
+        }
+      );
+
+      if (functionError) throw functionError;
+      if (functionData?.error) throw new Error(functionData.error);
+
+      Alert.alert(
+        'Verification Email Sent',
+        'Please check your inbox and spam folder for the verification link.'
+      );
+    } catch (error: any) {
+      console.error('[EditProfile] Failed to send verification email:', error);
+      Alert.alert('Error', error.message || 'Failed to send verification email. Please try again.');
+    } finally {
+      setSendingVerification(false);
+    }
+  };
 
   const handleChangePhoto = async () => {
     try {
@@ -230,9 +292,35 @@ export default function EditProfileScreen() {
                 editable={false}
                 placeholderTextColor={Colors.inputPlaceholder}
               />
-              <Ionicons name="lock-closed-outline" size={16} color={Colors.textSecondary} />
+              {isEmailVerified ? (
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                  <Text style={styles.verifiedText}>Verified</Text>
+                </View>
+              ) : (
+                <Ionicons name="lock-closed-outline" size={16} color={Colors.textSecondary} />
+              )}
             </View>
-            <Text style={styles.helpText}>Email cannot be changed</Text>
+            {!isEmailVerified && (
+              <View style={styles.verifyEmailContainer}>
+                <View style={styles.verifyEmailWarning}>
+                  <Ionicons name="warning-outline" size={16} color={Colors.warning} />
+                  <Text style={styles.verifyEmailWarningText}>Email not verified</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.verifyEmailButton, sendingVerification && styles.buttonDisabled]}
+                  onPress={handleSendVerificationEmail}
+                  disabled={sendingVerification}
+                >
+                  {sendingVerification ? (
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                  ) : (
+                    <Text style={styles.verifyEmailButtonText}>Send Verification Email</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+            {isEmailVerified && <Text style={styles.helpText}>Email cannot be changed</Text>}
           </View>
 
           {/* Job Type */}
@@ -537,5 +625,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     lineHeight: 20,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.success + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  verifiedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.success,
+  },
+  verifyEmailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  verifyEmailWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  verifyEmailWarningText: {
+    fontSize: 13,
+    color: Colors.warning,
+  },
+  verifyEmailButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Colors.primary + '20',
+  },
+  verifyEmailButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });
