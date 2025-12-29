@@ -2,11 +2,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Alert } from 'react-native';
 import { useUserStore } from '../store/userStore';
 import { useAppLockStore } from '../store/appLockStore';
 import { useAnimationStore } from '../store/animationStore';
 import { supabase } from '../services/api/supabase';
+
+// Deep linking
+import {
+  setupDeepLinkListener,
+  getInitialDeepLink,
+  handleReferralDeepLink,
+  DeepLinkResult,
+} from '../services/deepLink/deepLinkHandler';
+import { initializeReferralData } from '../services/api/referrals';
 
 // Import screens
 import LandingScreen from '../screens/onboarding/LandingScreen';
@@ -30,9 +39,13 @@ import PoolDetailScreen from '../screens/pools/PoolDetailScreen';
 import ContactSupportScreen from '../screens/settings/ContactSupportScreen';
 import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
 import NotificationSettingsScreen from '../screens/settings/NotificationSettingsScreen';
+import ReferralScreen from '../screens/referral/ReferralScreen';
+import AchievementsScreen from '../screens/achievements/AchievementsScreen';
 import LockScreen from '../components/LockScreen';
 import SplashAnimation from '../components/SplashAnimation';
 import CelebrationModal from '../components/CelebrationModal';
+import BadgeCelebrationModal from '../components/BadgeCelebrationModal';
+import { useGamificationStore } from '../store/gamificationStore';
 
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +62,10 @@ export default function AppNavigator() {
   const shouldShowGoalCelebration = useAnimationStore((state) => state.shouldShowGoalCelebration);
   const goalCelebrationData = useAnimationStore((state) => state.goalCelebrationData);
   const clearGoalCelebration = useAnimationStore((state) => state.clearGoalCelebration);
+
+  // Badge celebration state
+  const pendingBadgeCelebration = useGamificationStore((state) => state.pendingBadgeCelebration);
+  const clearBadgeCelebration = useGamificationStore((state) => state.clearBadgeCelebration);
 
   // App Lock state
   const appState = useRef(AppState.currentState);
@@ -90,6 +107,43 @@ export default function AppNavigator() {
       subscription.remove();
     };
   }, [isAppLockEnabled, shouldLock, lock, setLastBackgroundTime]);
+
+  // Handle deep links
+  const handleDeepLink = async (result: DeepLinkResult) => {
+    if (!result.handled) return;
+
+    if (result.type === 'referral' && result.data?.code) {
+      const response = await handleReferralDeepLink(result.data.code, !!user);
+      if (response.message) {
+        Alert.alert(
+          response.success ? 'Welcome!' : 'Referral Code',
+          response.message
+        );
+      }
+    }
+  };
+
+  // Set up deep link listener and check for initial link
+  useEffect(() => {
+    // Set up listener for links while app is running
+    const cleanup = setupDeepLinkListener(handleDeepLink);
+
+    // Check for link that opened the app
+    getInitialDeepLink().then((result) => {
+      if (result) {
+        handleDeepLink(result);
+      }
+    });
+
+    return cleanup;
+  }, [user]);
+
+  // Initialize referral data when user logs in
+  useEffect(() => {
+    if (user && hasCompletedOnboarding) {
+      initializeReferralData();
+    }
+  }, [user, hasCompletedOnboarding]);
 
   useEffect(() => {
     // Check for existing session
@@ -193,6 +247,12 @@ export default function AppNavigator() {
         title={goalCelebrationData?.title}
         subtitle={goalCelebrationData?.subtitle}
         onClose={clearGoalCelebration}
+      />
+
+      {/* Badge Celebration Modal */}
+      <BadgeCelebrationModal
+        badge={pendingBadgeCelebration}
+        onClose={clearBadgeCelebration}
       />
 
       <NavigationContainer>
@@ -346,6 +406,22 @@ export default function AppNavigator() {
               options={{
                 headerShown: false,
                 title: 'Notifications'
+              }}
+            />
+            <Stack.Screen
+              name="Referral"
+              component={ReferralScreen}
+              options={{
+                headerShown: false,
+                title: 'Invite Friends'
+              }}
+            />
+            <Stack.Screen
+              name="Achievements"
+              component={AchievementsScreen}
+              options={{
+                headerShown: false,
+                title: 'Achievements'
               }}
             />
           </>

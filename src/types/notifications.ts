@@ -8,6 +8,9 @@ export type NotificationPreferences = {
   streakReminder: boolean;
   taxReminders: boolean; // Premium only
 
+  // Email Notifications
+  weeklyEmailSummary: boolean; // Monday morning email recap
+
   // Push Notifications
   teamPoolUpdates: boolean;
   teamInvites: boolean;
@@ -20,6 +23,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   goalAchieved: true,
   streakReminder: true,
   taxReminders: true,
+  weeklyEmailSummary: true,
   teamPoolUpdates: true,
   teamInvites: true,
   announcements: false,
@@ -33,6 +37,7 @@ export type NotificationConfig = {
   description: string;
   isPremium?: boolean;
   isTeamFeature?: boolean;
+  isEmailNotification?: boolean;
 };
 
 export const NOTIFICATION_CONFIGS: NotificationConfig[] = [
@@ -62,6 +67,13 @@ export const NOTIFICATION_CONFIGS: NotificationConfig[] = [
     title: 'Tax Reminders',
     description: 'Quarterly tax deadline alerts',
     isPremium: true,
+  },
+  // Email Notifications
+  {
+    key: 'weeklyEmailSummary',
+    title: 'Weekly Email Summary',
+    description: 'Receive your week\'s tips recap via email every Monday',
+    isEmailNotification: true,
   },
   // Push Notifications - Teams
   {

@@ -39,10 +39,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Generate email confirmation link for signup
+    // Generate email confirmation link
     // Redirect to our custom verify-success page after verification
     const redirectTo = `${Deno.env.get('SUPABASE_URL')}/functions/v1/verify-success`;
 
+    // Use 'signup' type to generate a confirmation link
+    // NOTE: Email confirmation must be ENABLED in Supabase Auth settings
+    // (Authentication > Providers > Email > "Confirm email" toggle)
     const { data: otpData, error: otpError } = await supabaseClient.auth.admin.generateLink({
       type: 'signup',
       email: email,

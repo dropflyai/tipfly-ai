@@ -3,6 +3,7 @@
     "name": "TipFly AI",
     "slug": "tipflyai-app",
     "version": "1.0.2",
+    "scheme": "tipflyai",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

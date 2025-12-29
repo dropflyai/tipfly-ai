@@ -30,8 +30,13 @@ import GoalsSection from '../../components/cards/GoalsSection';
 import ShiftPredictionCard from '../../components/cards/ShiftPredictionCard';
 import DailyInsightCard from '../../components/cards/DailyInsightCard';
 import PendingPoolsAlert from '../../components/cards/PendingPoolsAlert';
+import { ReferralCard } from '../../components/cards/ReferralCard';
+import { StreakDisplay } from '../../components/StreakDisplay';
+import { SyncStatusBadge } from '../../components/SyncStatusBadge';
 import { generateShiftPrediction, ShiftPrediction } from '../../services/ai/predictions';
 import { generateDailyInsight, DailyInsight } from '../../services/ai/insights';
+import { useGamificationStore } from '../../store/gamificationStore';
+import { initializeGamification } from '../../services/api/gamification';
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -51,6 +56,8 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     loadDashboardData();
+    // Initialize gamification data
+    initializeGamification();
   }, []);
 
   useEffect(() => {
@@ -215,7 +222,13 @@ export default function DashboardScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Home</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Home</Text>
+          <View style={styles.headerRight}>
+            <SyncStatusBadge />
+            <StreakDisplay compact onPress={() => navigation.navigate('Achievements' as never)} />
+          </View>
+        </View>
       </View>
 
       <Animated.View
@@ -361,6 +374,11 @@ export default function DashboardScreen() {
             </View>
           </View>
 
+          {/* Referral Card */}
+          <View style={styles.section}>
+            <ReferralCard />
+          </View>
+
           {/* Upgrade Prompt for Free Users - Gold Accent */}
           {!isPremium && (
             <TouchableOpacity
@@ -409,10 +427,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderBlue,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: Colors.text,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   loadingContainer: {
     flex: 1,
