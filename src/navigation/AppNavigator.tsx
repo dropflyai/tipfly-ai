@@ -30,6 +30,7 @@ import BillSplitScreen from '../screens/premium/BillSplitScreen';
 import TaxTrackingScreen from '../screens/premium/TaxTrackingScreen';
 import GoalsScreen from '../screens/premium/GoalsScreen';
 import ExportReportsScreen from '../screens/premium/ExportReportsScreen';
+import IncomeVerificationScreen from '../screens/premium/IncomeVerificationScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
 import TipHistoryScreen from '../screens/history/TipHistoryScreen';
 import JobsScreen from '../screens/jobs/JobsScreen';
@@ -50,7 +51,7 @@ import { useGamificationStore } from '../store/gamificationStore';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { user, setUser, setLoading, hasCompletedOnboarding } = useUserStore();
+  const { user, setUser, setLoading, hasCompletedOnboarding, completeOnboarding, resetOnboarding } = useUserStore();
   const [initializing, setInitializing] = useState(true);
 
   // Splash animation state
@@ -202,7 +203,16 @@ export default function AppNavigator() {
 
       if (data) {
         console.log('[AppNavigator] User profile fetched successfully:', data.email);
-        console.log('[AppNavigator] Has completed onboarding:', hasCompletedOnboarding);
+        console.log('[AppNavigator] DB onboarding_completed:', data.onboarding_completed);
+
+        // Sync onboarding state from database (source of truth for new users)
+        if (data.onboarding_completed) {
+          completeOnboarding();
+        } else {
+          resetOnboarding();
+        }
+
+        console.log('[AppNavigator] Has completed onboarding (after sync):', data.onboarding_completed);
         setUser(data);
       } else {
         console.log('[AppNavigator] No user profile data returned');
@@ -334,6 +344,14 @@ export default function AppNavigator() {
               options={{
                 headerShown: true,
                 title: 'Export Reports'
+              }}
+            />
+            <Stack.Screen
+              name="IncomeVerification"
+              component={IncomeVerificationScreen}
+              options={{
+                headerShown: true,
+                title: 'Income Summary Report'
               }}
             />
             <Stack.Screen

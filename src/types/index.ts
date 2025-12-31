@@ -115,3 +115,5 @@ export type StatsData = {
   thisMonth: number;
   lastMonth: number;
 };
+
+export type JobType = 'waiter' | 'bartender' | 'stylist' | 'nail_tech' | 'driver' | 'delivery' | 'other';

@@ -4,56 +4,100 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  
   ScrollView,
+  StatusBar,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, JobType } from '../../types';
-import { Colors } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, GradientColors, Shadows } from '../../constants/colors';
 import { AppConfig } from '../../constants/config';
+import { JobType } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
+import { lightHaptic, mediumHaptic } from '../../utils/haptics';
+import OnboardingProgress from '../../components/OnboardingProgress';
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'JobSelection'>;
-};
+interface JobSelectionScreenProps {
+  onNext: (jobType: JobType) => void;
+}
 
-export default function JobSelectionScreen({ navigation }: Props) {
+export default function JobSelectionScreen({ onNext }: JobSelectionScreenProps) {
   const [selectedJob, setSelectedJob] = useState<JobType | null>(null);
+
+  const handleJobSelect = (jobId: string) => {
+    lightHaptic();
+    setSelectedJob(jobId as JobType);
+  };
 
   const handleContinue = () => {
     if (selectedJob) {
-      navigation.navigate('Signup');
+      mediumHaptic();
+      onNext(selectedJob);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>What do you do?</Text>
-        <Text style={styles.subtitle}>
-          This helps us customize your experience
-        </Text>
+    <LinearGradient
+      colors={GradientColors.background}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" />
 
-        <View style={styles.jobGrid}>
-          {AppConfig.JOB_TYPES.map((job) => (
-            <TouchableOpacity
-              key={job.id}
-              style={[
-                styles.jobCard,
-                selectedJob === job.id && styles.jobCardSelected,
-              ]}
-              onPress={() => setSelectedJob(job.id as JobType)}
-            >
-              <Text style={styles.jobIcon}>{job.icon}</Text>
-              <Text style={[
-                styles.jobLabel,
-                selectedJob === job.id && styles.jobLabelSelected,
-              ]}>
-                {job.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      {/* Progress Indicator */}
+      <View style={styles.progressContainer}>
+        <OnboardingProgress currentStep={1} totalSteps={3} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>What do you do?</Text>
+          <Text style={styles.subtitle}>
+            Select your main job to personalize your experience
+          </Text>
         </View>
 
+        {/* Job Grid */}
+        <View style={styles.jobGrid}>
+          {AppConfig.JOB_TYPES.map((job) => {
+            const isSelected = selectedJob === job.id;
+            return (
+              <TouchableOpacity
+                key={job.id}
+                style={[
+                  styles.jobCard,
+                  isSelected && styles.jobCardSelected,
+                ]}
+                onPress={() => handleJobSelect(job.id)}
+                activeOpacity={0.8}
+              >
+                <View style={[
+                  styles.jobIconContainer,
+                  isSelected && styles.jobIconContainerSelected,
+                ]}>
+                  <Text style={styles.jobIcon}>{job.icon}</Text>
+                </View>
+                <Text style={[
+                  styles.jobLabel,
+                  isSelected && styles.jobLabelSelected,
+                ]}>
+                  {job.label}
+                </Text>
+                {isSelected && (
+                  <View style={styles.checkmark}>
+                    <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Continue Button */}
+      <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[
             styles.continueButton,
@@ -61,88 +105,139 @@ export default function JobSelectionScreen({ navigation }: Props) {
           ]}
           onPress={handleContinue}
           disabled={!selectedJob}
+          activeOpacity={0.9}
         >
-          <Text style={[
-            styles.continueButtonText,
-            !selectedJob && styles.continueButtonTextDisabled,
-          ]}>
-            Continue
-          </Text>
+          {selectedJob ? (
+            <LinearGradient
+              colors={GradientColors.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.continueButtonGradient}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+              <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+            </LinearGradient>
+          ) : (
+            <View style={styles.continueButtonGradient}>
+              <Text style={styles.continueButtonTextDisabled}>Select your job</Text>
+            </View>
+          )}
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
-  content: {
+  progressContainer: {
+    paddingTop: 60,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 24,
+    paddingTop: 16,
+  },
+  header: {
+    marginBottom: 32,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 8,
+    fontWeight: '800',
+    color: Colors.white,
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
-    marginBottom: 32,
+    lineHeight: 24,
   },
   jobGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
-    marginBottom: 32,
   },
   jobCard: {
     width: '47%',
     aspectRatio: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
+    backgroundColor: Colors.card,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: Colors.border,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+    position: 'relative',
   },
   jobCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight + '10',
+    backgroundColor: 'rgba(0, 168, 232, 0.08)',
+    ...Shadows.glowBlueSubtle,
+  },
+  jobIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: Colors.backgroundTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  jobIconContainerSelected: {
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
   },
   jobIcon: {
-    fontSize: 48,
+    fontSize: 36,
   },
   jobLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   jobLabelSelected: {
-    color: Colors.primary,
+    color: Colors.white,
+  },
+  checkmark: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  buttonContainer: {
+    padding: 24,
+    paddingBottom: 48,
+    backgroundColor: Colors.background,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   continueButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   continueButtonDisabled: {
-    backgroundColor: Colors.gray200,
+    opacity: 1,
+  },
+  continueButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    gap: 10,
+    backgroundColor: Colors.backgroundTertiary,
   },
   continueButtonText: {
-    color: Colors.white,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: Colors.white,
   },
   continueButtonTextDisabled: {
-    color: Colors.gray400,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.textTertiary,
   },
 });

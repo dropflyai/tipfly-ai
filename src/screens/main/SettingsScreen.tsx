@@ -20,7 +20,7 @@ import { lightHaptic, mediumHaptic } from '../../utils/haptics';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
-  const { user, isPremium, clearUser, resetOnboarding } = useUserStore();
+  const { user, isPremium, clearUser, resetOnboarding, resetTour } = useUserStore();
 
   const handleSignOut = () => {
     lightHaptic();
@@ -275,6 +275,16 @@ export default function SettingsScreen() {
                   lightHaptic();
                   navigation.navigate('ExportReports' as never);
                 }}
+              />
+              <SettingsOption
+                icon="document-text"
+                title="Income Summary Report"
+                subtitle="For apartments, loans & more"
+                iconColor={Colors.gold}
+                onPress={() => {
+                  lightHaptic();
+                  navigation.navigate('IncomeVerification' as never);
+                }}
                 isLast
               />
             </View>
@@ -318,6 +328,27 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
           <View style={styles.optionsList}>
+            <SettingsOption
+              icon="play-circle-outline"
+              title="Replay App Tour"
+              subtitle="See the app tour again"
+              onPress={() => {
+                lightHaptic();
+                resetTour();
+                Alert.alert(
+                  'Tour Reset',
+                  'The app tour will play when you return to the Home screen.',
+                  [
+                    {
+                      text: 'Go to Home',
+                      onPress: () => {
+                        navigation.navigate('Home' as never);
+                      },
+                    },
+                  ]
+                );
+              }}
+            />
             <SettingsOption
               icon="mail-outline"
               title="Contact Support"

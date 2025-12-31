@@ -844,3 +844,568 @@ export const generateTaxSummaryPDFHTML = (data: TaxSummaryPDFData): string => {
 export const getTaxSummaryFilename = (year: number): string => {
   return `TipFly_Tax_Summary_${year}.pdf`;
 };
+
+/**
+ * Income Summary Report data structure
+ */
+export interface IncomeVerificationData {
+  // User info
+  userName: string;
+  userEmail: string;
+  // Report period
+  periodType: 'monthly' | 'quarterly' | 'annual' | 'custom';
+  periodLabel: string; // e.g., "January 2025", "Q4 2024", "2024"
+  startDate: Date;
+  endDate: Date;
+  // Income data
+  grossIncome: number;
+  tipOut: number;
+  netIncome: number;
+  // Work stats
+  totalShifts: number;
+  totalHours: number;
+  averagePerShift: number;
+  averagePerHour: number;
+  // Monthly breakdown (for quarterly/annual reports)
+  monthlyBreakdown?: {
+    month: string;
+    income: number;
+    shifts: number;
+    hours: number;
+  }[];
+  // Verification
+  reportId: string; // Unique ID for this report
+  generatedAt: string; // ISO timestamp
+}
+
+/**
+ * Generate a unique report ID
+ */
+const generateReportId = (): string => {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `TF-${timestamp}-${random}`.toUpperCase();
+};
+
+/**
+ * Generate Income Summary Report PDF HTML
+ * Professional format suitable for apartment applications, loans, etc.
+ */
+export const generateIncomeVerificationPDFHTML = (data: IncomeVerificationData): string => {
+  const formatMoney = (amount: number) =>
+    amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const generatedDate = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: 'Times New Roman', Georgia, serif;
+          padding: 48px;
+          color: #1a1a1a;
+          font-size: 12px;
+          line-height: 1.6;
+          background: white;
+        }
+        .letterhead {
+          text-align: center;
+          border-bottom: 2px solid #2563eb;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+        }
+        .letterhead .logo {
+          font-size: 28px;
+          font-weight: bold;
+          color: #2563eb;
+          letter-spacing: 2px;
+        }
+        .letterhead .tagline {
+          font-size: 11px;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        .document-title {
+          text-align: center;
+          font-size: 20px;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 3px;
+          margin-bottom: 30px;
+          color: #1a1a1a;
+        }
+        .report-info {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 30px;
+          font-size: 11px;
+        }
+        .report-info-left {
+          text-align: left;
+        }
+        .report-info-right {
+          text-align: right;
+        }
+        .report-info strong {
+          color: #2563eb;
+        }
+        .section {
+          margin-bottom: 25px;
+        }
+        .section-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #1a1a1a;
+          border-bottom: 1px solid #d1d5db;
+          padding-bottom: 8px;
+          margin-bottom: 15px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .certification-box {
+          background: #f8fafc;
+          border: 2px solid #2563eb;
+          border-radius: 8px;
+          padding: 20px;
+          margin-bottom: 25px;
+        }
+        .certification-text {
+          font-size: 13px;
+          line-height: 1.8;
+        }
+        .highlight {
+          font-weight: bold;
+          color: #2563eb;
+        }
+        .income-summary {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        .income-box {
+          flex: 1;
+          background: #f1f5f9;
+          border-radius: 8px;
+          padding: 15px;
+          text-align: center;
+        }
+        .income-box.primary {
+          background: #2563eb;
+          color: white;
+        }
+        .income-box .label {
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 5px;
+        }
+        .income-box.primary .label {
+          opacity: 0.9;
+        }
+        .income-box .value {
+          font-size: 24px;
+          font-weight: bold;
+        }
+        .details-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 15px;
+        }
+        .details-table th {
+          background: #f1f5f9;
+          padding: 10px 12px;
+          text-align: left;
+          font-weight: 600;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        .details-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .details-table tr:last-child td {
+          border-bottom: none;
+        }
+        .details-table .label {
+          color: #6b7280;
+        }
+        .details-table .value {
+          font-weight: 600;
+          text-align: right;
+        }
+        .monthly-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+        .monthly-table th {
+          background: #2563eb;
+          color: white;
+          padding: 8px 10px;
+          text-align: right;
+          font-weight: 600;
+        }
+        .monthly-table th:first-child {
+          text-align: left;
+        }
+        .monthly-table td {
+          padding: 8px 10px;
+          border-bottom: 1px solid #e5e7eb;
+          text-align: right;
+        }
+        .monthly-table td:first-child {
+          text-align: left;
+        }
+        .monthly-table tr:nth-child(even) {
+          background: #f9fafb;
+        }
+        .monthly-table tr.total {
+          background: #f1f5f9;
+          font-weight: bold;
+        }
+        .verification-footer {
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 2px solid #e5e7eb;
+        }
+        .verification-id {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #f8fafc;
+          padding: 12px 16px;
+          border-radius: 6px;
+          font-size: 10px;
+        }
+        .verification-id .id-label {
+          color: #6b7280;
+        }
+        .verification-id .id-value {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          color: #2563eb;
+          font-size: 12px;
+        }
+        .disclaimer {
+          margin-top: 25px;
+          padding: 15px;
+          background: #fefce8;
+          border: 1px solid #fde047;
+          border-radius: 6px;
+          font-size: 10px;
+          color: #713f12;
+        }
+        .disclaimer strong {
+          display: block;
+          margin-bottom: 5px;
+        }
+        .signature-section {
+          margin-top: 30px;
+          padding-top: 20px;
+        }
+        .signature-line {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 40px;
+        }
+        .signature-box {
+          width: 45%;
+        }
+        .signature-box .line {
+          border-top: 1px solid #1a1a1a;
+          padding-top: 8px;
+          font-size: 10px;
+          color: #6b7280;
+        }
+        .footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 9px;
+          color: #9ca3af;
+        }
+        .watermark {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          font-size: 8px;
+          color: #d1d5db;
+        }
+      </style>
+    </head>
+    <body>
+      <!-- Letterhead -->
+      <div class="letterhead">
+        <div class="logo">TIPFLY AI</div>
+        <div class="tagline">Professional Tip & Income Tracking Platform</div>
+      </div>
+
+      <!-- Document Title -->
+      <div class="document-title">Income Summary Report</div>
+
+      <!-- Report Info -->
+      <div class="report-info">
+        <div class="report-info-left">
+          <strong>Prepared For:</strong><br>
+          ${data.userName}<br>
+          ${data.userEmail}
+        </div>
+        <div class="report-info-right">
+          <strong>Report ID:</strong> ${data.reportId}<br>
+          <strong>Generated:</strong> ${generatedDate}<br>
+          <strong>Period:</strong> ${data.periodLabel}
+        </div>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="certification-box">
+        <div class="certification-text">
+          This document summarizes self-reported income recorded by <span class="highlight">${data.userName}</span>
+          through the TipFly AI platform for the period of
+          <span class="highlight">${formatDate(data.startDate)}</span> through
+          <span class="highlight">${formatDate(data.endDate)}</span>.
+          The reported net income for this period is
+          <span class="highlight">$${formatMoney(data.netIncome)}</span>.
+        </div>
+      </div>
+
+      <!-- Income Summary Boxes -->
+      <div class="income-summary">
+        <div class="income-box primary">
+          <div class="label">Net Income</div>
+          <div class="value">$${formatMoney(data.netIncome)}</div>
+        </div>
+        <div class="income-box">
+          <div class="label">Total Shifts</div>
+          <div class="value">${data.totalShifts}</div>
+        </div>
+        <div class="income-box">
+          <div class="label">Hours Worked</div>
+          <div class="value">${data.totalHours.toFixed(1)}</div>
+        </div>
+        <div class="income-box">
+          <div class="label">Avg Per Hour</div>
+          <div class="value">$${formatMoney(data.averagePerHour)}</div>
+        </div>
+      </div>
+
+      <!-- Income Details Section -->
+      <div class="section">
+        <div class="section-title">Income Details</div>
+        <table class="details-table">
+          <tr>
+            <td class="label">Gross Tips Earned</td>
+            <td class="value">$${formatMoney(data.grossIncome)}</td>
+          </tr>
+          ${data.tipOut > 0 ? `
+          <tr>
+            <td class="label">Tip Out (Shared with Support Staff)</td>
+            <td class="value">-$${formatMoney(data.tipOut)}</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td class="label"><strong>Net Income</strong></td>
+            <td class="value"><strong>$${formatMoney(data.netIncome)}</strong></td>
+          </tr>
+        </table>
+        <table class="details-table">
+          <tr>
+            <td class="label">Total Shifts Worked</td>
+            <td class="value">${data.totalShifts}</td>
+          </tr>
+          <tr>
+            <td class="label">Total Hours Worked</td>
+            <td class="value">${data.totalHours.toFixed(1)} hours</td>
+          </tr>
+          <tr>
+            <td class="label">Average Income Per Shift</td>
+            <td class="value">$${formatMoney(data.averagePerShift)}</td>
+          </tr>
+          <tr>
+            <td class="label">Average Hourly Rate</td>
+            <td class="value">$${formatMoney(data.averagePerHour)}/hr</td>
+          </tr>
+        </table>
+      </div>
+  `;
+
+  // Add monthly breakdown for quarterly/annual reports
+  if (data.monthlyBreakdown && data.monthlyBreakdown.length > 0) {
+    const totalIncome = data.monthlyBreakdown.reduce((sum, m) => sum + m.income, 0);
+    const totalShifts = data.monthlyBreakdown.reduce((sum, m) => sum + m.shifts, 0);
+    const totalHours = data.monthlyBreakdown.reduce((sum, m) => sum + m.hours, 0);
+
+    html += `
+      <!-- Monthly Breakdown Section -->
+      <div class="section">
+        <div class="section-title">Monthly Breakdown</div>
+        <table class="monthly-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Income</th>
+              <th>Shifts</th>
+              <th>Hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.monthlyBreakdown.map(m => `
+            <tr>
+              <td>${m.month}</td>
+              <td>$${formatMoney(m.income)}</td>
+              <td>${m.shifts}</td>
+              <td>${m.hours.toFixed(1)}</td>
+            </tr>
+            `).join('')}
+            <tr class="total">
+              <td>Total</td>
+              <td>$${formatMoney(totalIncome)}</td>
+              <td>${totalShifts}</td>
+              <td>${totalHours.toFixed(1)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  html += `
+      <!-- Report Footer -->
+      <div class="verification-footer">
+        <div class="verification-id">
+          <span class="id-label">Report ID</span>
+          <span class="id-value">${data.reportId}</span>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer">
+        <strong>Important Notice:</strong>
+        This income summary report is generated based on data self-reported by the user through the TipFly AI platform.
+        TipFly AI does not independently verify this information and makes no representations or warranties regarding its accuracy.
+        This document is provided for informational purposes only and may be used alongside other documentation to support income claims.
+        For questions about this document, contact support@tipfly.ai.
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        TipFly AI Income Summary Report | Document ID: ${data.reportId}<br>
+        Generated on ${generatedDate} | tipfly.ai
+      </div>
+
+      <div class="watermark">
+        Generated by TipFly AI
+      </div>
+    </body>
+    </html>
+  `;
+
+  return html;
+};
+
+/**
+ * Get income verification data for a period
+ */
+export const getIncomeVerificationData = async (
+  startDate: Date,
+  endDate: Date,
+  periodType: 'monthly' | 'quarterly' | 'annual' | 'custom',
+  periodLabel: string
+): Promise<IncomeVerificationData> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('users')
+      .select('full_name, email')
+      .eq('id', user.id)
+      .single();
+
+    // Get entries for the period
+    const entries = await getEntriesForExport(startDate, endDate);
+
+    // Calculate totals - handle both tips_earned and amount fields
+    const grossIncome = entries.reduce((sum, e) => sum + ((e as any).tips_earned || (e as any).amount || 0), 0);
+    const tipOut = entries.reduce((sum, e) => sum + ((e as any).tip_out || 0), 0);
+    const netIncome = grossIncome - tipOut;
+    const totalShifts = entries.length;
+    const totalHours = entries.reduce((sum, e) => sum + (e.hours_worked || 0), 0);
+    const averagePerShift = totalShifts > 0 ? netIncome / totalShifts : 0;
+    const averagePerHour = totalHours > 0 ? netIncome / totalHours : 0;
+
+    // Generate monthly breakdown for quarterly/annual reports
+    let monthlyBreakdown: IncomeVerificationData['monthlyBreakdown'];
+    if (periodType !== 'monthly') {
+      const monthlyData: { [key: string]: { income: number; shifts: number; hours: number } } = {};
+
+      entries.forEach(entry => {
+        const entryDate = new Date(entry.date);
+        const monthKey = entryDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { income: 0, shifts: 0, hours: 0 };
+        }
+
+        const entryIncome = ((entry as any).tips_earned || (entry as any).amount || 0) - ((entry as any).tip_out || 0);
+        monthlyData[monthKey].income += entryIncome;
+        monthlyData[monthKey].shifts += 1;
+        monthlyData[monthKey].hours += entry.hours_worked || 0;
+      });
+
+      monthlyBreakdown = Object.entries(monthlyData).map(([month, data]) => ({
+        month,
+        ...data,
+      }));
+    }
+
+    return {
+      userName: profile?.full_name || user.email || 'Unknown',
+      userEmail: profile?.email || user.email || '',
+      periodType,
+      periodLabel,
+      startDate,
+      endDate,
+      grossIncome,
+      tipOut,
+      netIncome,
+      totalShifts,
+      totalHours,
+      averagePerShift,
+      averagePerHour,
+      monthlyBreakdown,
+      reportId: generateReportId(),
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    console.error('Error generating income verification data:', error);
+    throw new Error(error.message || 'Failed to generate income verification data');
+  }
+};
+
+/**
+ * Get filename for income summary report export
+ */
+export const getIncomeVerificationFilename = (periodLabel: string): string => {
+  const sanitized = periodLabel.replace(/[^a-zA-Z0-9]/g, '_');
+  return `TipFly_Income_Summary_${sanitized}.pdf`;
+};

@@ -32,6 +32,8 @@ import { getPrimaryJob } from '../../services/api/jobs';
 import { getPositionsByJob, getDefaultPosition } from '../../services/api/positions';
 import JobSelector from '../../components/common/JobSelector';
 import VoiceInputButton from '../../components/common/VoiceInputButton';
+import ImportEarningsScreen from '../import/ImportEarningsScreen';
+import ScanReceiptScreen from '../import/ScanReceiptScreen';
 
 interface AddTipScreenProps {
   onClose?: () => void;
@@ -70,9 +72,17 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
   const [scaleAnim] = useState(new Animated.Value(0));
   const [fadeAnim] = useState(new Animated.Value(0));
 
+  // Import modal state
+  const [showImportEarnings, setShowImportEarnings] = useState(false);
+  const [showScanReceipt, setShowScanReceipt] = useState(false);
+
   // Tip count tracking
   const incrementTipCount = useAnimationStore((state) => state.incrementTipCount);
   const loadTipCount = useAnimationStore((state) => state.loadTipCount);
+
+  // Import scan limits
+  const canUseImportScan = useUserStore((state) => state.canUseImportScan);
+  const getRemainingImportScans = useUserStore((state) => state.getRemainingImportScans);
 
   // Load primary job and tip count on mount
   React.useEffect(() => {
@@ -121,6 +131,37 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
     } else {
       setPositions([]);
       setSelectedPosition(null);
+    }
+  };
+
+  // Handle import button press with limit check
+  const handleImportPress = (type: 'screenshot' | 'receipt') => {
+    const remaining = getRemainingImportScans();
+
+    if (!canUseImportScan()) {
+      errorHaptic();
+      Alert.alert(
+        'Monthly Limit Reached',
+        `You've used all ${3} free import scans this month. Upgrade to Premium for unlimited scans!\n\n• Unlimited screenshot imports\n• Unlimited receipt scans\n• AI-powered entry\n• And more!`,
+        [
+          { text: 'Maybe Later', style: 'cancel' },
+          {
+            text: 'Upgrade',
+            onPress: () => {
+              // @ts-ignore - navigation typing
+              navigation.navigate('Premium');
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    lightHaptic();
+    if (type === 'screenshot') {
+      setShowImportEarnings(true);
+    } else {
+      setShowScanReceipt(true);
     }
   };
 
@@ -534,6 +575,34 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
               </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Import Options */}
+        <View style={styles.importSection}>
+          <View style={styles.importHeader}>
+            <Text style={styles.importSectionTitle}>Or import from:</Text>
+            {!isPremium && (
+              <Text style={styles.importLimitText}>
+                {getRemainingImportScans()}/3 free
+              </Text>
+            )}
+          </View>
+          <View style={styles.importButtons}>
+            <TouchableOpacity
+              style={styles.importButton}
+              onPress={() => handleImportPress('screenshot')}
+            >
+              <Ionicons name="phone-portrait-outline" size={20} color={Colors.primary} />
+              <Text style={styles.importButtonText}>App Screenshot</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.importButton}
+              onPress={() => handleImportPress('receipt')}
+            >
+              <Ionicons name="receipt-outline" size={20} color={Colors.primary} />
+              <Text style={styles.importButtonText}>Scan Receipt</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* AI Entry Mode */}
@@ -979,6 +1048,26 @@ export default function AddTipScreen({ onClose }: AddTipScreenProps) {
             </LinearGradient>
           </Animated.View>
         </Animated.View>
+      </Modal>
+
+      {/* Import Earnings Modal */}
+      <Modal
+        visible={showImportEarnings}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowImportEarnings(false)}
+      >
+        <ImportEarningsScreen onClose={() => setShowImportEarnings(false)} />
+      </Modal>
+
+      {/* Scan Receipt Modal */}
+      <Modal
+        visible={showScanReceipt}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowScanReceipt(false)}
+      >
+        <ScanReceiptScreen onClose={() => setShowScanReceipt(false)} />
       </Modal>
     </SafeAreaView>
   );
@@ -1499,5 +1588,50 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: Colors.primary,
+  },
+  importSection: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  importHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  importSectionTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  importButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  importButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.primary + '40',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  importButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  importLimitText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.gold,
   },
 });

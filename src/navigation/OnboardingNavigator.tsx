@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import FeatureTourScreen from '../screens/onboarding/FeatureTourScreen';
+import WelcomeStep from '../screens/onboarding/WelcomeStep';
+import JobSelectionScreen from '../screens/onboarding/JobSelectionScreen';
 import AddFirstTipScreen from '../screens/onboarding/AddFirstTipScreen';
 import SuccessScreen from '../screens/onboarding/SuccessScreen';
 import { useUserStore } from '../store/userStore';
+import { JobType } from '../types';
 
 const Stack = createStackNavigator();
 
 export default function OnboardingNavigator() {
-  const [hasAddedTip, setHasAddedTip] = useState(false);
+  const [selectedJobType, setSelectedJobType] = useState<JobType | null>(null);
   const completeOnboarding = useUserStore((state) => state.completeOnboarding);
+  const setJobType = useUserStore((state) => state.setJobType);
+
+  const handleJobSelected = (jobType: JobType, navigation: any) => {
+    setSelectedJobType(jobType);
+    setJobType(jobType);
+    navigation.navigate('AddFirstTip');
+  };
 
   return (
     <Stack.Navigator
@@ -18,42 +27,38 @@ export default function OnboardingNavigator() {
         gestureEnabled: false,
       }}
     >
-      {/* Feature Tour - 3 swipeable screens */}
-      <Stack.Screen name="FeatureTour">
+      {/* Welcome Step - Introduction */}
+      <Stack.Screen name="Welcome">
         {(props) => (
-          <FeatureTourScreen
-            onComplete={() => props.navigation.navigate('AddFirstTip')}
-            onSkip={() => {
-              setHasAddedTip(false);
-              props.navigation.navigate('Success');
-            }}
+          <WelcomeStep
+            onNext={() => props.navigation.navigate('JobSelection')}
           />
         )}
       </Stack.Screen>
 
-      {/* Add First Tip - with pre-filled example */}
+      {/* Job Selection - Required */}
+      <Stack.Screen name="JobSelection">
+        {(props) => (
+          <JobSelectionScreen
+            onNext={(jobType) => handleJobSelected(jobType, props.navigation)}
+          />
+        )}
+      </Stack.Screen>
+
+      {/* Add First Tip - Required */}
       <Stack.Screen name="AddFirstTip">
         {(props) => (
           <AddFirstTipScreen
-            {...props}
-            onNext={() => {
-              setHasAddedTip(true);
-              props.navigation.navigate('Success');
-            }}
-            onSkip={() => {
-              setHasAddedTip(false);
-              props.navigation.navigate('Success');
-            }}
+            jobType={selectedJobType || undefined}
+            onNext={() => props.navigation.navigate('Success')}
           />
         )}
       </Stack.Screen>
 
-      {/* Success - celebration screen */}
+      {/* Success - Celebration screen */}
       <Stack.Screen name="Success">
-        {(props) => (
+        {() => (
           <SuccessScreen
-            {...props}
-            hasAddedTip={hasAddedTip}
             onFinish={completeOnboarding}
           />
         )}

@@ -21,6 +21,15 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import CreateTeamModal from './CreateTeamModal';
 import JoinTeamModal from './JoinTeamModal';
 
+// Global callback for tour to trigger create team modal
+let globalShowCreateTeamModal: (() => void) | null = null;
+
+export function triggerCreateTeamModal() {
+  if (globalShowCreateTeamModal) {
+    globalShowCreateTeamModal();
+  }
+}
+
 export default function TeamsScreen() {
   const navigation = useNavigation<StackNavigationProp<any>>();
   const isPremium = useUserStore((state) => state.isPremium());
@@ -32,6 +41,16 @@ export default function TeamsScreen() {
 
   useEffect(() => {
     loadTeams();
+  }, []);
+
+  // Register global callback for tour
+  useEffect(() => {
+    globalShowCreateTeamModal = () => {
+      setCreateModalVisible(true);
+    };
+    return () => {
+      globalShowCreateTeamModal = null;
+    };
   }, []);
 
   const loadTeams = async () => {
