@@ -6,6 +6,7 @@ export type RootStackParamList = {
   JobSelection: undefined;
   Login: undefined;
   Signup: undefined;
+  ResetPassword: undefined;
   Main: undefined;
   Upgrade: undefined;
 };

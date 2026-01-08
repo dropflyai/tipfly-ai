@@ -31,6 +31,45 @@ export default function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Email Required', 'Please enter your email address first, then tap "Forgot Password?"');
+      return;
+    }
+
+    Alert.alert(
+      'Reset Password',
+      `Send password reset link to:\n\n${email}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Link',
+          onPress: async () => {
+            setSendingReset(true);
+            try {
+              const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+                redirectTo: 'tipflyai://reset-password',
+              });
+
+              if (error) throw error;
+
+              Alert.alert(
+                'Check Your Email',
+                'We sent a password reset link to your email. Click the link to create a new password.',
+                [{ text: 'OK' }]
+              );
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to send reset email. Please try again.');
+            } finally {
+              setSendingReset(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -144,6 +183,17 @@ export default function LoginScreen({ navigation }: Props) {
                   />
                 </TouchableOpacity>
               </View>
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={handleForgotPassword}
+                disabled={sendingReset}
+              >
+                {sendingReset ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                )}
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
@@ -293,5 +343,15 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingVertical: 4,
+  },
+  forgotPasswordText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

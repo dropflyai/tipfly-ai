@@ -21,6 +21,7 @@ import { initializeReferralData } from '../services/api/referrals';
 import LandingScreen from '../screens/onboarding/LandingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import MainTabNavigator from './MainTabNavigator';
 import OnboardingNavigator from './OnboardingNavigator';
 import UpgradeScreen from '../screens/subscription/UpgradeScreen';
@@ -109,6 +110,9 @@ export default function AppNavigator() {
     };
   }, [isAppLockEnabled, shouldLock, lock, setLastBackgroundTime]);
 
+  // Navigation ref for deep linking
+  const navigationRef = useRef<any>(null);
+
   // Handle deep links
   const handleDeepLink = async (result: DeepLinkResult) => {
     if (!result.handled) return;
@@ -121,6 +125,18 @@ export default function AppNavigator() {
           response.message
         );
       }
+    }
+
+    if (result.type === 'reset-password') {
+      // Navigate to reset password screen
+      console.log('[AppNavigator] Password reset deep link received');
+      // The supabase auth will handle the token exchange automatically
+      // Just need to show the reset password screen
+      setTimeout(() => {
+        if (navigationRef.current) {
+          navigationRef.current.navigate('ResetPassword');
+        }
+      }, 500);
     }
   };
 
@@ -265,7 +281,7 @@ export default function AppNavigator() {
         onClose={clearBadgeCelebration}
       />
 
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           // Auth flow - Landing first, then direct to Signup or Login
@@ -280,6 +296,7 @@ export default function AppNavigator() {
             </Stack.Screen>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : !hasCompletedOnboarding ? (
           // Interactive tutorial onboarding

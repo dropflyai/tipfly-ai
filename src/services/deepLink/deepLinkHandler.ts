@@ -11,7 +11,7 @@ import { Analytics } from '../analytics/analytics';
 // https://tipflyai.app/r/ABC123 (future web support)
 
 export interface DeepLinkResult {
-  type: 'referral' | 'unknown';
+  type: 'referral' | 'reset-password' | 'unknown';
   data?: Record<string, string>;
   handled: boolean;
 }
@@ -46,6 +46,15 @@ export const parseDeepLink = (url: string): DeepLinkResult => {
           handled: true,
         };
       }
+    }
+
+    // Handle password reset links
+    // tipflyai://reset-password
+    if (parsed.path === 'reset-password' || parsed.hostname === 'reset-password') {
+      return {
+        type: 'reset-password',
+        handled: true,
+      };
     }
 
     return { type: 'unknown', handled: false };
