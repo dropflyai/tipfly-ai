@@ -19,7 +19,7 @@ type TabParamList = {
 };
 
 // Import screens
-import DashboardScreen from '../screens/main/DashboardScreen';
+import DashboardScreen from '../screens/main/DashboardScreenV2';
 import AddTipScreen from '../screens/main/AddTipScreen';
 import StatsScreen from '../screens/main/StatsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';

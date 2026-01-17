@@ -117,4 +117,25 @@ export type StatsData = {
   lastMonth: number;
 };
 
+export type DashboardStats = {
+  today: {
+    tips: number;
+    hours: number;
+    hourly_rate: number;
+    vs_yesterday: number;
+  };
+  week: {
+    tips: number;
+    hours: number;
+    hourly_rate: number;
+    best_day: string;
+    best_day_amount: number;
+  };
+  month: {
+    tips: number;
+    hours: number;
+    hourly_rate: number;
+  };
+};
+
 export type JobType = 'waiter' | 'bartender' | 'stylist' | 'nail_tech' | 'driver' | 'delivery' | 'other';

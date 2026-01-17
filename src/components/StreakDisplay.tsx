@@ -15,11 +15,13 @@ import { lightHaptic } from '../utils/haptics';
 
 interface StreakDisplayProps {
   compact?: boolean;
+  inline?: boolean; // For quick stats row - just value and label
   onPress?: () => void;
 }
 
 export const StreakDisplay: React.FC<StreakDisplayProps> = ({
   compact = false,
+  inline = false,
   onPress,
 }) => {
   const navigation = useNavigation();
@@ -37,6 +39,18 @@ export const StreakDisplay: React.FC<StreakDisplayProps> = ({
       navigation.navigate('Achievements' as never);
     }
   };
+
+  // Inline display for quick stats (just value + label)
+  if (inline) {
+    return (
+      <>
+        <Text style={styles.inlineValue}>
+          {currentStreak} 🔥
+        </Text>
+        <Text style={styles.inlineLabel}>Streak</Text>
+      </>
+    );
+  }
 
   // Compact inline display (for headers)
   if (compact) {
@@ -121,6 +135,18 @@ export const StreakBadge: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  // Inline styles (for quick stats)
+  inlineValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  inlineLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+
   // Compact styles
   compactContainer: {
     flexDirection: 'row',
