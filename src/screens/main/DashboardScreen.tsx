@@ -32,6 +32,10 @@ import { generateDailyInsight, DailyInsight } from '../../services/ai/insights';
 import { useGamificationStore } from '../../store/gamificationStore';
 import { initializeGamification } from '../../services/api/gamification';
 import { openAddTipModal } from '../../navigation/MainTabNavigator';
+import LockedInsightTeaser from '../../components/subscription/LockedInsightTeaser';
+import TaxSeasonBanner from '../../components/subscription/TaxSeasonBanner';
+import SmartUpgradeTrigger from '../../components/subscription/SmartUpgradeTrigger';
+import { PersonalBestCard, WeeklyPercentileCard } from '../../components/gamification';
 
 export default function DashboardScreenV2() {
   const navigation = useNavigation();
@@ -45,6 +49,10 @@ export default function DashboardScreenV2() {
   const [prediction, setPrediction] = useState<ShiftPrediction | null>(null);
   const [dailyInsight, setDailyInsight] = useState<DailyInsight | null>(null);
   const [lastWeekTotal, setLastWeekTotal] = useState<number>(0);
+  const [showUpgradeTrigger, setShowUpgradeTrigger] = useState(false);
+  const [upgradeTriggerType, setUpgradeTriggerType] = useState<'tip_milestone' | 'weekly_summary'>('tip_milestone');
+  const [totalTipsLogged, setTotalTipsLogged] = useState(0);
+  const [showTaxBanner, setShowTaxBanner] = useState(true);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
   const pulseAnim = useState(new Animated.Value(1))[0];
@@ -146,6 +154,19 @@ export default function DashboardScreenV2() {
       setActiveGoals(goals);
       setRecentEntries(entries);
       setWeeklyChartData(chartData);
+
+      // Track total tips for milestone triggers (for free users)
+      if (!isPremium) {
+        // Count total entries for milestone check
+        const allEntries = await getTipEntries(100);
+        setTotalTipsLogged(allEntries.length);
+
+        // Show upgrade trigger at 10 tips milestone (one-time)
+        if (allEntries.length === 10 || allEntries.length === 25 || allEntries.length === 50) {
+          setUpgradeTriggerType('tip_milestone');
+          setShowUpgradeTrigger(true);
+        }
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -238,6 +259,15 @@ export default function DashboardScreenV2() {
         >
           <EmailVerificationBanner />
           <PendingPoolsAlert />
+
+          {/* Tax Season Banner - Shows Jan-Apr for free users */}
+          {!isPremium && showTaxBanner && (
+            <TaxSeasonBanner
+              totalTips={stats?.month.tips || 0}
+              onPress={() => navigation.navigate('Upgrade' as never)}
+              onDismiss={() => setShowTaxBanner(false)}
+            />
+          )}
 
           {/* HERO CARD - Today's Earnings + Add Tips CTA */}
           <LinearGradient
@@ -360,43 +390,59 @@ export default function DashboardScreenV2() {
             </TouchableOpacity>
           </View>
 
-          {/* AI INSIGHTS - Collapsible (Premium) */}
-          <CollapsibleSection
-            title="AI Insights"
-            icon="sparkles"
-            iconColor={Colors.gold}
-            locked={!isPremium}
-            lockedMessage="Unlock AI predictions with Premium"
-            onLockedPress={() => navigation.navigate('Upgrade' as never)}
-            defaultExpanded={isPremium}
-          >
-            {prediction && (
-              <View style={styles.insightItem}>
-                <Ionicons name="flash" size={18} color={Colors.primary} />
-                <View style={styles.insightContent}>
-                  <Text style={styles.insightTitle}>Next Shift Prediction</Text>
-                  <Text style={styles.insightValue}>
-                    {formatCurrency(prediction.expectedRange[0])} - {formatCurrency(prediction.expectedRange[1])}
-                  </Text>
-                  <Text style={styles.insightSubtext}>{prediction.reasoning}</Text>
+          {/* AI INSIGHTS - Premium gets full access, Free gets teaser */}
+          {isPremium ? (
+            <CollapsibleSection
+              title="AI Insights"
+              icon="sparkles"
+              iconColor={Colors.gold}
+              defaultExpanded={true}
+            >
+              {prediction && (
+                <View style={styles.insightItem}>
+                  <Ionicons name="flash" size={18} color={Colors.primary} />
+                  <View style={styles.insightContent}>
+                    <Text style={styles.insightTitle}>Next Shift Prediction</Text>
+                    <Text style={styles.insightValue}>
+                      {formatCurrency(prediction.expectedRange[0])} - {formatCurrency(prediction.expectedRange[1])}
+                    </Text>
+                    <Text style={styles.insightSubtext}>{prediction.reasoning}</Text>
+                  </View>
                 </View>
-              </View>
-            )}
-            {dailyInsight && (
-              <View style={styles.insightItem}>
-                <Ionicons name="bulb" size={18} color={Colors.gold} />
-                <View style={styles.insightContent}>
-                  <Text style={styles.insightTitle}>Today's Insight</Text>
-                  <Text style={styles.insightSubtext}>{dailyInsight.insight}</Text>
+              )}
+              {dailyInsight && (
+                <View style={styles.insightItem}>
+                  <Ionicons name="bulb" size={18} color={Colors.gold} />
+                  <View style={styles.insightContent}>
+                    <Text style={styles.insightTitle}>Today's Insight</Text>
+                    <Text style={styles.insightSubtext}>{dailyInsight.insight}</Text>
+                  </View>
                 </View>
-              </View>
-            )}
-            {!prediction && !dailyInsight && isPremium && (
-              <Text style={styles.emptyInsight}>
-                Log more tips to get personalized AI insights!
-              </Text>
-            )}
-          </CollapsibleSection>
+              )}
+              {!prediction && !dailyInsight && (
+                <Text style={styles.emptyInsight}>
+                  Log more tips to get personalized AI insights!
+                </Text>
+              )}
+            </CollapsibleSection>
+          ) : (
+            /* Locked Insight Teaser for Free Users - Shows blurred real data */
+            <LockedInsightTeaser
+              predictedEarnings={[
+                Math.round((stats?.week.hourly_rate || 18) * 4 * 0.9),
+                Math.round((stats?.week.hourly_rate || 18) * 6 * 1.1),
+              ]}
+              potentialSavings={Math.round((stats?.month.tips || 500) * 0.18 * 12)}
+              bestDayPotential={Math.round(Math.max(...weeklyChartData) * 1.15) || 150}
+              onUnlock={() => navigation.navigate('Upgrade' as never)}
+            />
+          )}
+
+          {/* PERSONAL BEST PROGRESS - Gamification */}
+          <PersonalBestCard onPress={() => navigation.navigate('Analytics' as never)} />
+
+          {/* WEEKLY PERCENTILE - Anonymous ranking */}
+          <WeeklyPercentileCard />
 
           {/* RECENT TIPS - Collapsible */}
           <CollapsibleSection
@@ -489,42 +535,26 @@ export default function DashboardScreenV2() {
             )}
           </CollapsibleSection>
 
-          {/* UPGRADE CARD - For Free Users */}
-          {!isPremium && (
-            <TouchableOpacity
-              style={styles.upgradeCard}
-              onPress={() => {
-                mediumHaptic();
-                navigation.navigate('Upgrade' as never);
-              }}
-              activeOpacity={0.9}
-            >
-              <LinearGradient
-                colors={['#0077B6', '#005F8A', '#004466']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.upgradeGradient}
-              >
-                <View style={styles.upgradeIconContainer}>
-                  <Ionicons name="sparkles" size={24} color={Colors.gold} />
-                </View>
-                <View style={styles.upgradeContent}>
-                  <Text style={styles.upgradeTitle}>Know what you'll earn</Text>
-                  <Text style={styles.upgradeSubtitle}>
-                    Unlock AI predictions, goals & tax reports
-                  </Text>
-                </View>
-                <View style={styles.upgradeArrow}>
-                  <Ionicons name="chevron-forward" size={20} color={Colors.white} />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-
           {/* Bottom spacing for tab bar */}
           <View style={{ height: 20 }} />
         </ScrollView>
       </Animated.View>
+
+      {/* Smart Upgrade Trigger Modal - Shows at high-intent moments */}
+      <SmartUpgradeTrigger
+        visible={showUpgradeTrigger}
+        triggerType={upgradeTriggerType}
+        onUpgrade={() => {
+          setShowUpgradeTrigger(false);
+          navigation.navigate('Upgrade' as never);
+        }}
+        onDismiss={() => setShowUpgradeTrigger(false)}
+        context={{
+          tipCount: totalTipsLogged,
+          weeklyEarnings: stats?.week.tips || 0,
+          totalTips: stats?.month.tips || 0,
+        }}
+      />
     </View>
   );
 }
@@ -834,50 +864,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.success,
-  },
-
-  // Upgrade Card
-  upgradeCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 168, 232, 0.3)',
-    ...Shadows.buttonBlue,
-  },
-  upgradeGradient: {
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  upgradeIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  upgradeContent: {
-    flex: 1,
-  },
-  upgradeTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  upgradeSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
-    lineHeight: 18,
-  },
-  upgradeArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

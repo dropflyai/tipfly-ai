@@ -1,5 +1,5 @@
 // Streak Display Component
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,25 +11,40 @@ import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { useGamificationStore } from '../store/gamificationStore';
 import { hasLoggedToday, getStreakStatusMessage } from '../services/api/gamification';
+import { getStreakPercentile, StreakPercentile } from '../services/api/leaderboard';
 import { lightHaptic } from '../utils/haptics';
 
 interface StreakDisplayProps {
   compact?: boolean;
   inline?: boolean; // For quick stats row - just value and label
+  showPercentile?: boolean; // Show percentile in full card mode
   onPress?: () => void;
 }
 
 export const StreakDisplay: React.FC<StreakDisplayProps> = ({
   compact = false,
   inline = false,
+  showPercentile = true,
   onPress,
 }) => {
   const navigation = useNavigation();
   const { streak } = useGamificationStore();
+  const [percentileData, setPercentileData] = useState<StreakPercentile | null>(null);
 
   const currentStreak = streak?.current_streak || 0;
   const longestStreak = streak?.longest_streak || 0;
   const loggedToday = hasLoggedToday(streak);
+
+  useEffect(() => {
+    if (showPercentile && !compact && !inline && currentStreak > 0) {
+      loadPercentile();
+    }
+  }, [currentStreak, showPercentile, compact, inline]);
+
+  const loadPercentile = async () => {
+    const data = await getStreakPercentile();
+    setPercentileData(data);
+  };
 
   const handlePress = () => {
     lightHaptic();
@@ -91,6 +106,16 @@ export const StreakDisplay: React.FC<StreakDisplayProps> = ({
           </Text>
         </View>
       </View>
+
+      {/* Percentile Badge */}
+      {percentileData && percentileData.percentile > 0 && (
+        <View style={styles.percentileBadge}>
+          <Ionicons name="podium" size={14} color={Colors.gold} />
+          <Text style={styles.percentileText}>
+            Longer streak than {percentileData.percentile}% of users
+          </Text>
+        </View>
+      )}
 
       {/* Stats Row */}
       <View style={styles.statsRow}>
@@ -252,6 +277,23 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+
+  // Percentile badge
+  percentileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  percentileText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.gold,
   },
 
   // Badge styles
