@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,38 +7,33 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, GradientColors, Shadows, GlassStyles } from '../../constants/colors';
 import { DashboardStats, TipEntry } from '../../types';
 import { getTodaysTips, getWeeklyTips, getMonthlyTips, getTipEntriesByDateRange, getTipEntries } from '../../services/api/tips';
 import { calculateDashboardStats } from '../../utils/calculations';
 import { formatCurrency, formatHourlyRate, formatHours, formatChange, getYesterdayISO, getTodayISO } from '../../utils/formatting';
 import { useUserStore } from '../../store/userStore';
-import { getActiveGoals, Goal, calculateProgress, getGoalPeriodLabel } from '../../services/api/goals';
-import { Ionicons } from '@expo/vector-icons';
+import { getActiveGoals, Goal } from '../../services/api/goals';
 import { lightHaptic, mediumHaptic } from '../../utils/haptics';
-import { Animated } from 'react-native';
 import { springAnimation } from '../../utils/animations';
 import EmailVerificationBanner from '../../components/EmailVerificationBanner';
-import WeeklyTrendChart from '../../components/charts/WeeklyTrendChart';
-import QuickActionsRow, { QuickAction } from '../../components/common/QuickActionsRow';
-import RecentEntriesSection from '../../components/cards/RecentEntriesSection';
-import GoalsSection from '../../components/cards/GoalsSection';
-import ShiftPredictionCard from '../../components/cards/ShiftPredictionCard';
-import DailyInsightCard from '../../components/cards/DailyInsightCard';
+import WeekSparkline from '../../components/charts/WeekSparkline';
+import CollapsibleSection from '../../components/common/CollapsibleSection';
 import PendingPoolsAlert from '../../components/cards/PendingPoolsAlert';
-import { ReferralCard } from '../../components/cards/ReferralCard';
 import { StreakDisplay } from '../../components/StreakDisplay';
 import { SyncStatusBadge } from '../../components/SyncStatusBadge';
 import { generateShiftPrediction, ShiftPrediction } from '../../services/ai/predictions';
 import { generateDailyInsight, DailyInsight } from '../../services/ai/insights';
 import { useGamificationStore } from '../../store/gamificationStore';
 import { initializeGamification } from '../../services/api/gamification';
+import { openAddTipModal } from '../../navigation/MainTabNavigator';
 
-export default function DashboardScreen() {
+export default function DashboardScreenV2() {
   const navigation = useNavigation();
   const isPremium = useUserStore((state) => state.isPremium());
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -48,51 +43,78 @@ export default function DashboardScreen() {
   const [recentEntries, setRecentEntries] = useState<TipEntry[]>([]);
   const [weeklyChartData, setWeeklyChartData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [prediction, setPrediction] = useState<ShiftPrediction | null>(null);
-  const [predictionLoading, setPredictionLoading] = useState(false);
   const [dailyInsight, setDailyInsight] = useState<DailyInsight | null>(null);
-  const [insightLoading, setInsightLoading] = useState(false);
+  const [lastWeekTotal, setLastWeekTotal] = useState<number>(0);
   const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(50))[0];
+  const slideAnim = useState(new Animated.Value(30))[0];
+  const pulseAnim = useState(new Animated.Value(1))[0];
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [isPremium])
+  );
 
   useEffect(() => {
-    loadDashboardData();
-    // Initialize gamification data
     initializeGamification();
   }, []);
 
   useEffect(() => {
-    // Fade-in animation when data loads
     if (!loading && stats) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 500,
+          duration: 400,
           useNativeDriver: true,
         }),
         Animated.spring(slideAnim, {
           toValue: 0,
           tension: 50,
-          friction: 7,
+          friction: 8,
           useNativeDriver: true,
         }),
       ]).start();
+
+      // Pulse animation for Add Tips button if no tips today
+      if (stats.today.tips === 0) {
+        const pulse = Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]);
+        Animated.loop(pulse).start();
+      }
     }
   }, [loading, stats]);
 
   const loadDashboardData = async () => {
     try {
-      console.log('Dashboard: isPremium =', isPremium);
-      const [todayEntries, yesterdayEntries, weekEntries, monthEntries, goals, entries] = await Promise.all([
+      // Get last week's data for comparison
+      const lastWeekStart = new Date();
+      lastWeekStart.setDate(lastWeekStart.getDate() - 13);
+      const lastWeekEnd = new Date();
+      lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
+
+      const [todayEntries, yesterdayEntries, weekEntries, monthEntries, lastWeekEntries, goals, entries] = await Promise.all([
         getTodaysTips(),
         getTipEntriesByDateRange(getYesterdayISO(), getYesterdayISO()),
         getWeeklyTips(),
         getMonthlyTips(),
+        getTipEntriesByDateRange(
+          lastWeekStart.toISOString().split('T')[0],
+          lastWeekEnd.toISOString().split('T')[0]
+        ),
         isPremium ? getActiveGoals() : Promise.resolve([]),
-        getTipEntries(5), // Get recent 5 entries
+        getTipEntries(3), // Only 3 for compact view
       ]);
-
-      console.log('Dashboard: Fetched goals =', goals);
-      console.log('Dashboard: Goals count =', goals.length);
 
       const calculatedStats = calculateDashboardStats(
         todayEntries,
@@ -101,52 +123,29 @@ export default function DashboardScreen() {
         monthEntries
       );
 
-      // Prepare weekly chart data (last 7 days)
       const chartData = prepareWeeklyChartData(weekEntries);
+      const lastWeekSum = lastWeekEntries.reduce((sum, e) => sum + e.tips_earned, 0);
+      setLastWeekTotal(lastWeekSum);
 
-      // Generate AI shift prediction (PREMIUM ONLY)
+      // Generate AI insights for premium users
       if (isPremium) {
-        setPredictionLoading(true);
         try {
-          const predictionResult = await generateShiftPrediction(weekEntries);
+          const [predictionResult, insightResult] = await Promise.all([
+            generateShiftPrediction(weekEntries),
+            generateDailyInsight(monthEntries),
+          ]);
           setPrediction(predictionResult);
-          console.log('Dashboard: AI prediction generated');
-        } catch (error) {
-          console.error('Dashboard: Failed to generate prediction:', error);
-          setPrediction(null);
-        } finally {
-          setPredictionLoading(false);
-        }
-      } else {
-        setPrediction(null);
-        setPredictionLoading(false);
-      }
-
-      // Generate daily insight (PREMIUM ONLY)
-      if (isPremium) {
-        setInsightLoading(true);
-        try {
-          const insightResult = await generateDailyInsight(monthEntries);
           setDailyInsight(insightResult);
-          console.log('Dashboard: Daily insight generated');
         } catch (error) {
-          console.error('Dashboard: Failed to generate insight:', error);
-          setDailyInsight(null);
-        } finally {
-          setInsightLoading(false);
+          console.error('Dashboard: Failed to generate AI insights:', error);
         }
-      } else {
-        setDailyInsight(null);
-        setInsightLoading(false);
       }
 
-      // Animate layout changes
       springAnimation();
       setStats(calculatedStats);
       setActiveGoals(goals);
       setRecentEntries(entries);
       setWeeklyChartData(chartData);
-      console.log('Dashboard: Active goals set to state');
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -156,7 +155,6 @@ export default function DashboardScreen() {
   };
 
   const prepareWeeklyChartData = (entries: TipEntry[]): number[] => {
-    // Get last 7 days
     const today = new Date();
     const data: number[] = [];
 
@@ -178,37 +176,22 @@ export default function DashboardScreen() {
     loadDashboardData();
   };
 
-  // Quick actions configuration
-  const quickActions: QuickAction[] = [
-    {
-      id: 'history',
-      icon: 'calendar',
-      label: 'Tip History',
-      onPress: () => navigation.navigate('TipHistory' as never),
-    },
-    {
-      id: 'analytics',
-      icon: 'analytics',
-      label: 'Analytics',
-      onPress: () => navigation.navigate('Analytics' as never),
-    },
-    {
-      id: 'goals',
-      icon: 'flag',
-      label: 'Goals',
-      onPress: () => navigation.navigate('Goals' as never),
-      disabled: !isPremium,
-      premiumFeature: true,
-    },
-    {
-      id: 'export',
-      icon: 'document-text',
-      label: 'Export',
-      onPress: () => navigation.navigate('ExportReports' as never),
-      disabled: !isPremium,
-      premiumFeature: true,
-    },
-  ];
+  const handleAddTips = () => {
+    openAddTipModal();
+  };
+
+  const weekChangePercent = lastWeekTotal > 0
+    ? ((stats?.week.tips || 0) - lastWeekTotal) / lastWeekTotal * 100
+    : 0;
+
+  // Find best day of the week
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const maxTipsIndex = weeklyChartData.indexOf(Math.max(...weeklyChartData));
+  const today = new Date();
+  const bestDayOffset = 6 - maxTipsIndex;
+  const bestDayDate = new Date(today);
+  bestDayDate.setDate(bestDayDate.getDate() - bestDayOffset);
+  const bestDay = dayNames[bestDayDate.getDay()];
 
   if (loading) {
     return (
@@ -217,6 +200,9 @@ export default function DashboardScreen() {
       </View>
     );
   }
+
+  const hasTipsToday = (stats?.today.tips || 0) > 0;
+  const hasAnyTips = (stats?.week.tips || 0) > 0 || recentEntries.length > 0;
 
   return (
     <View style={styles.container}>
@@ -248,138 +234,262 @@ export default function DashboardScreen() {
               tintColor={Colors.primary}
             />
           }
+          showsVerticalScrollIndicator={false}
         >
-          {/* Email Verification Banner */}
           <EmailVerificationBanner />
-
-          {/* Pending Pools Alert */}
           <PendingPoolsAlert />
 
-          {/* Today's Earnings Card - Hero with Blue Gradient */}
+          {/* HERO CARD - Today's Earnings + Add Tips CTA */}
           <LinearGradient
             colors={GradientColors.hero}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroCard}
           >
-            <Text style={styles.heroLabel}>Today's Tips</Text>
-            <Text style={styles.heroAmount}>{formatCurrency(stats?.today.tips || 0)}</Text>
-            <View style={styles.heroStats}>
-              <Text style={styles.heroStat}>
-                {formatHours(stats?.today.hours || 0)} worked
-              </Text>
-              <Text style={styles.heroDot}>•</Text>
-              <Text style={styles.heroStat}>
-                {formatHourlyRate(stats?.today.hourly_rate || 0)}
-              </Text>
+            <View style={styles.heroContent}>
+              <View style={styles.heroLeft}>
+                <Text style={styles.heroLabel}>Today's Tips</Text>
+                <Text style={styles.heroAmount}>{formatCurrency(stats?.today.tips || 0)}</Text>
+                {hasTipsToday ? (
+                  <View style={styles.heroStats}>
+                    <Text style={styles.heroStat}>
+                      {formatHours(stats?.today.hours || 0)} worked
+                    </Text>
+                    <Text style={styles.heroDot}>•</Text>
+                    <Text style={styles.heroStat}>
+                      {formatHourlyRate(stats?.today.hourly_rate || 0)}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.heroEmptyText}>
+                    {hasAnyTips ? 'No tips logged yet today' : 'Start tracking your tips!'}
+                  </Text>
+                )}
+                {hasTipsToday && stats && stats.today.vs_yesterday !== 0 && (
+                  <View style={[
+                    styles.changeIndicator,
+                    stats.today.vs_yesterday > 0 ? styles.changePositive : styles.changeNegative
+                  ]}>
+                    <Ionicons
+                      name={stats.today.vs_yesterday > 0 ? "trending-up" : "trending-down"}
+                      size={14}
+                      color={Colors.white}
+                    />
+                    <Text style={styles.changeText}>
+                      {formatChange(stats.today.vs_yesterday)} vs yesterday
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Add Tips Button - PRIMARY CTA */}
+              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                <TouchableOpacity
+                  style={styles.addTipsButton}
+                  onPress={handleAddTips}
+                  activeOpacity={0.9}
+                >
+                  <LinearGradient
+                    colors={GradientColors.gold}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.addTipsGradient}
+                  >
+                    <Ionicons name="add" size={24} color={Colors.white} />
+                    <Text style={styles.addTipsText}>Add Tips</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Animated.View>
             </View>
-            {stats && stats.today.vs_yesterday !== 0 && (
-              <View style={[
-                styles.changeIndicator,
-                stats.today.vs_yesterday > 0 ? styles.changePositive : styles.changeNegative
-              ]}>
+          </LinearGradient>
+
+          {/* WEEK SUMMARY - Secondary */}
+          <View style={styles.weekCard}>
+            <View style={styles.weekHeader}>
+              <View>
+                <Text style={styles.weekLabel}>This Week</Text>
+                <Text style={styles.weekAmount}>{formatCurrency(stats?.week.tips || 0)}</Text>
+              </View>
+              <WeekSparkline data={weeklyChartData} height={36} barWidth={10} />
+            </View>
+            {weekChangePercent !== 0 && (
+              <View style={styles.weekChange}>
                 <Ionicons
-                  name={stats.today.vs_yesterday > 0 ? "trending-up" : "trending-down"}
-                  size={14}
-                  color={Colors.white}
+                  name={weekChangePercent > 0 ? "trending-up" : "trending-down"}
+                  size={16}
+                  color={weekChangePercent > 0 ? Colors.success : Colors.error}
                 />
-                <Text style={styles.changeText}>
-                  {formatChange(stats.today.vs_yesterday)} vs yesterday
+                <Text style={[
+                  styles.weekChangeText,
+                  { color: weekChangePercent > 0 ? Colors.success : Colors.error }
+                ]}>
+                  {Math.abs(weekChangePercent).toFixed(0)}% vs last week
                 </Text>
               </View>
             )}
-          </LinearGradient>
-
-          {/* AI Shift Prediction */}
-          <View style={styles.section}>
-            <ShiftPredictionCard
-              prediction={prediction}
-              loading={predictionLoading}
-              onRefresh={onRefresh}
-              isPremium={isPremium}
-            />
           </View>
 
-          {/* Daily Insight */}
-          <View style={styles.section}>
-            <DailyInsightCard
-              insight={dailyInsight}
-              loading={insightLoading}
-              onRefresh={onRefresh}
-              isPremium={isPremium}
-            />
+          {/* QUICK STATS ROW - Tertiary */}
+          <View style={styles.quickStatsRow}>
+            <TouchableOpacity
+              style={styles.quickStatCard}
+              onPress={() => navigation.navigate('Analytics' as never)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickStatValue}>
+                {formatHourlyRate(stats?.week.hourly_rate || 0)}
+              </Text>
+              <Text style={styles.quickStatLabel}>Avg Rate</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickStatCard}
+              onPress={() => navigation.navigate('Analytics' as never)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickStatValue}>{bestDay}</Text>
+              <Text style={styles.quickStatLabel}>Best Day</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickStatCard}
+              onPress={() => navigation.navigate('Achievements' as never)}
+              activeOpacity={0.7}
+            >
+              <StreakDisplay inline />
+            </TouchableOpacity>
           </View>
 
-          {/* Weekly Trend Chart - Glass Card */}
-          <View style={styles.glassCard}>
-            <View style={styles.chartHeader}>
-              <View style={styles.chartTitleRow}>
-                <Ionicons name="bar-chart" size={20} color={Colors.primary} />
-                <Text style={styles.chartTitle}>This Week</Text>
-              </View>
-              <Text style={styles.chartSubtitle}>{formatCurrency(stats?.week.tips || 0)}</Text>
-            </View>
-            <WeeklyTrendChart data={weeklyChartData} />
-          </View>
-
-          {/* Quick Actions */}
-          <View style={styles.section}>
-            <QuickActionsRow actions={quickActions} />
-          </View>
-
-          {/* Goals Section */}
-          {isPremium && (
-            <View style={styles.section}>
-              <GoalsSection
-                goals={activeGoals}
-                onViewAll={() => navigation.navigate('Goals' as never)}
-                onCreateGoal={() => navigation.navigate('Goals' as never)}
-                onGoalPress={(goal) => navigation.navigate('Goals' as never)}
-                isPremium={isPremium}
-              />
-            </View>
-          )}
-
-          {/* Recent Entries */}
-          <View style={styles.section}>
-            <RecentEntriesSection
-              entries={recentEntries}
-              onSeeAll={() => navigation.navigate('Analytics' as never)}
-              onEntryPress={(entry) => {
-                // Could navigate to edit screen in the future
-                console.log('Entry pressed:', entry.id);
-              }}
-            />
-          </View>
-
-          {/* This Month Summary Card - Glass Style */}
-          <View style={styles.section}>
-            <View style={styles.glassCard}>
-              <View style={styles.monthHeader}>
-                <Ionicons name="calendar" size={24} color={Colors.primary} />
-                <Text style={styles.monthTitle}>This Month</Text>
-              </View>
-              <Text style={styles.monthAmount}>{formatCurrency(stats?.month.tips || 0)}</Text>
-              <View style={styles.monthStats}>
-                <View style={styles.monthStat}>
-                  <Text style={styles.monthStatLabel}>Hours</Text>
-                  <Text style={styles.monthStatValue}>{formatHours(stats?.month.hours || 0)}</Text>
-                </View>
-                <View style={styles.monthStatDivider} />
-                <View style={styles.monthStat}>
-                  <Text style={styles.monthStatLabel}>Avg Rate</Text>
-                  <Text style={styles.monthStatValue}>{formatHourlyRate(stats?.month.hourly_rate || 0)}</Text>
+          {/* AI INSIGHTS - Collapsible (Premium) */}
+          <CollapsibleSection
+            title="AI Insights"
+            icon="sparkles"
+            iconColor={Colors.gold}
+            locked={!isPremium}
+            lockedMessage="Unlock AI predictions with Premium"
+            onLockedPress={() => navigation.navigate('Upgrade' as never)}
+            defaultExpanded={isPremium}
+          >
+            {prediction && (
+              <View style={styles.insightItem}>
+                <Ionicons name="flash" size={18} color={Colors.primary} />
+                <View style={styles.insightContent}>
+                  <Text style={styles.insightTitle}>Next Shift Prediction</Text>
+                  <Text style={styles.insightValue}>
+                    {formatCurrency(prediction.expectedRange[0])} - {formatCurrency(prediction.expectedRange[1])}
+                  </Text>
+                  <Text style={styles.insightSubtext}>{prediction.reasoning}</Text>
                 </View>
               </View>
-            </View>
-          </View>
+            )}
+            {dailyInsight && (
+              <View style={styles.insightItem}>
+                <Ionicons name="bulb" size={18} color={Colors.gold} />
+                <View style={styles.insightContent}>
+                  <Text style={styles.insightTitle}>Today's Insight</Text>
+                  <Text style={styles.insightSubtext}>{dailyInsight.insight}</Text>
+                </View>
+              </View>
+            )}
+            {!prediction && !dailyInsight && isPremium && (
+              <Text style={styles.emptyInsight}>
+                Log more tips to get personalized AI insights!
+              </Text>
+            )}
+          </CollapsibleSection>
 
-          {/* Referral Card */}
-          <View style={styles.section}>
-            <ReferralCard />
-          </View>
+          {/* RECENT TIPS - Collapsible */}
+          <CollapsibleSection
+            title="Recent Tips"
+            icon="time"
+            iconColor={Colors.primary}
+            badge={recentEntries.length > 0 ? `${recentEntries.length}` : undefined}
+            defaultExpanded={true}
+          >
+            {recentEntries.length > 0 ? (
+              <>
+                {recentEntries.map((entry, index) => (
+                  <View key={entry.id} style={styles.recentEntry}>
+                    <View style={styles.recentEntryLeft}>
+                      <Text style={styles.recentEntryDate}>
+                        {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </Text>
+                      <Text style={styles.recentEntryHours}>
+                        {formatHours(entry.hours_worked)}
+                      </Text>
+                    </View>
+                    <Text style={styles.recentEntryAmount}>
+                      {formatCurrency(entry.tips_earned)}
+                    </Text>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  style={styles.seeAllButton}
+                  onPress={() => navigation.navigate('TipHistory' as never)}
+                >
+                  <Text style={styles.seeAllText}>See all tips</Text>
+                  <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.emptyRecent}>
+                <Text style={styles.emptyRecentText}>
+                  No tips logged yet. Add your first tip to get started!
+                </Text>
+              </View>
+            )}
+          </CollapsibleSection>
 
-          {/* Upgrade Prompt for Free Users - Gold Accent */}
+          {/* GOALS - Collapsible (Premium) */}
+          <CollapsibleSection
+            title="Goals"
+            icon="flag"
+            iconColor={Colors.success}
+            locked={!isPremium}
+            lockedMessage="Set earning goals with Premium"
+            onLockedPress={() => navigation.navigate('Upgrade' as never)}
+            defaultExpanded={isPremium && activeGoals.length > 0}
+          >
+            {activeGoals.length > 0 ? (
+              <>
+                {activeGoals.slice(0, 2).map((goal) => (
+                  <View key={goal.id} style={styles.goalItem}>
+                    <View style={styles.goalHeader}>
+                      <Text style={styles.goalName}>{goal.goal_type.charAt(0).toUpperCase() + goal.goal_type.slice(1)} Goal</Text>
+                      <Text style={styles.goalProgress}>
+                        {formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}
+                      </Text>
+                    </View>
+                    <View style={styles.goalProgressBar}>
+                      <View
+                        style={[
+                          styles.goalProgressFill,
+                          { width: `${Math.min((goal.current_amount / goal.target_amount) * 100, 100)}%` }
+                        ]}
+                      />
+                    </View>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  style={styles.seeAllButton}
+                  onPress={() => navigation.navigate('Goals' as never)}
+                >
+                  <Text style={styles.seeAllText}>Manage goals</Text>
+                  <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.createGoalButton}
+                onPress={() => navigation.navigate('Goals' as never)}
+              >
+                <Ionicons name="add-circle" size={20} color={Colors.success} />
+                <Text style={styles.createGoalText}>Create your first goal</Text>
+              </TouchableOpacity>
+            )}
+          </CollapsibleSection>
+
+          {/* UPGRADE CARD - For Free Users */}
           {!isPremium && (
             <TouchableOpacity
               style={styles.upgradeCard}
@@ -390,24 +500,29 @@ export default function DashboardScreen() {
               activeOpacity={0.9}
             >
               <LinearGradient
-                colors={GradientColors.gold}
+                colors={['#0077B6', '#005F8A', '#004466']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.upgradeGradient}
               >
                 <View style={styles.upgradeIconContainer}>
-                  <Ionicons name="star" size={28} color={Colors.white} />
+                  <Ionicons name="sparkles" size={24} color={Colors.gold} />
                 </View>
                 <View style={styles.upgradeContent}>
-                  <Text style={styles.upgradeTitle}>Upgrade to Premium</Text>
+                  <Text style={styles.upgradeTitle}>Know what you'll earn</Text>
                   <Text style={styles.upgradeSubtitle}>
-                    Unlimited history, AI insights, goals & more
+                    Unlock AI predictions, goals & tax reports
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color={Colors.white} />
+                <View style={styles.upgradeArrow}>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.white} />
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           )}
+
+          {/* Bottom spacing for tab bar */}
+          <View style={{ height: 20 }} />
         </ScrollView>
       </Animated.View>
     </View>
@@ -422,7 +537,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 16,
     backgroundColor: Colors.backgroundSecondary,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderBlue,
@@ -454,28 +569,35 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     gap: 16,
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
-  // Hero Card - Main earnings display with blue gradient
+
+  // Hero Card
   heroCard: {
     borderRadius: 24,
-    padding: 28,
-    alignItems: 'center',
+    padding: 24,
     ...Shadows.buttonBlue,
-    marginBottom: 4,
+  },
+  heroContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  heroLeft: {
+    flex: 1,
   },
   heroLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.white,
     opacity: 0.9,
-    marginBottom: 8,
+    marginBottom: 4,
     fontWeight: '500',
   },
   heroAmount: {
-    fontSize: 56,
+    fontSize: 48,
     fontWeight: '800',
     color: Colors.white,
-    marginBottom: 12,
+    marginBottom: 8,
     letterSpacing: -1,
   },
   heroStats: {
@@ -484,23 +606,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroStat: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.white,
     opacity: 0.9,
   },
   heroDot: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.white,
     opacity: 0.5,
   },
+  heroEmptyText: {
+    fontSize: 15,
+    color: Colors.white,
+    opacity: 0.8,
+  },
   changeIndicator: {
     marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    alignSelf: 'flex-start',
+    gap: 5,
   },
   changePositive: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -509,96 +637,224 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
   },
   changeText: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.white,
     fontWeight: '600',
   },
-  // Glass Card Style
-  glassCard: {
-    ...GlassStyles.card,
-    padding: 20,
+  addTipsButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Shadows.buttonGold,
   },
-  // Chart styles
-  chartHeader: {
-    marginBottom: 16,
-  },
-  chartTitleRow: {
-    flexDirection: 'row',
+  addTipsGradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  addTipsText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+
+  // Week Card
+  weekCard: {
+    ...GlassStyles.card,
+    padding: 18,
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weekLabel: {
+    fontSize: 14,
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  chartSubtitle: {
+  weekAmount: {
     fontSize: 28,
     fontWeight: '700',
     color: Colors.text,
   },
-  // Month card styles
-  monthHeader: {
+  weekChange: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  weekChangeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Quick Stats
+  quickStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  quickStatCard: {
+    flex: 1,
+    ...GlassStyles.card,
+    padding: 14,
+    alignItems: 'center',
+  },
+  quickStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  quickStatLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+
+  // Insights
+  insightItem: {
+    flexDirection: 'row',
     gap: 12,
     marginBottom: 16,
   },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  monthAmount: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: Colors.text,
-    marginBottom: 20,
-    letterSpacing: -0.5,
-  },
-  monthStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  monthStat: {
+  insightContent: {
     flex: 1,
   },
-  monthStatDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Colors.border,
-    marginHorizontal: 16,
+  insightTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 4,
   },
-  monthStatLabel: {
+  insightValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  insightSubtext: {
     fontSize: 13,
     color: Colors.textSecondary,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    lineHeight: 18,
   },
-  monthStatValue: {
-    fontSize: 18,
+  emptyInsight: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+
+  // Recent Entries
+  recentEntry: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  recentEntryLeft: {
+    flex: 1,
+  },
+  recentEntryDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  recentEntryHours: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  recentEntryAmount: {
+    fontSize: 16,
     fontWeight: '700',
+    color: Colors.primary,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  emptyRecent: {
+    paddingVertical: 16,
+  },
+  emptyRecentText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+
+  // Goals
+  goalItem: {
+    marginBottom: 16,
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  goalName: {
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.text,
   },
-  // Upgrade card - Gold gradient
+  goalProgress: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  goalProgressBar: {
+    height: 8,
+    backgroundColor: Colors.backgroundTertiary,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  goalProgressFill: {
+    height: '100%',
+    backgroundColor: Colors.success,
+    borderRadius: 4,
+  },
+  createGoalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+  },
+  createGoalText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.success,
+  },
+
+  // Upgrade Card
   upgradeCard: {
     borderRadius: 20,
     overflow: 'hidden',
-    ...Shadows.buttonGold,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 168, 232, 0.3)',
+    ...Shadows.buttonBlue,
   },
   upgradeGradient: {
-    padding: 20,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   upgradeIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -606,17 +862,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   upgradeTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
     marginBottom: 4,
   },
   upgradeSubtitle: {
-    fontSize: 14,
-    color: Colors.white,
-    opacity: 0.9,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 18,
   },
-  section: {
-    gap: 8,
+  upgradeArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

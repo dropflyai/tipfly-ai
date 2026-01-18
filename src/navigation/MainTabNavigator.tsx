@@ -19,11 +19,11 @@ type TabParamList = {
 };
 
 // Import screens
-import DashboardScreen from '../screens/main/DashboardScreenV2';
-import AddTipScreen from '../screens/main/AddTipScreenV2';
-import StatsScreen from '../screens/main/StatsScreenV2';
-import SettingsScreen from '../screens/main/SettingsScreenV2';
-import TeamsScreen, { triggerCreateTeamModal } from '../screens/teams/TeamsScreenV2';
+import DashboardScreen from '../screens/main/DashboardScreen';
+import AddTipScreen from '../screens/main/AddTipScreen';
+import StatsScreen from '../screens/main/StatsScreen';
+import SettingsScreen from '../screens/main/SettingsScreen';
+import TeamsScreen, { triggerCreateTeamModal } from '../screens/teams/TeamsScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

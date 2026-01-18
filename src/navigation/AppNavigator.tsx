@@ -24,7 +24,7 @@ import SignupScreen from '../screens/auth/SignupScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import MainTabNavigator from './MainTabNavigator';
 import OnboardingNavigator from './OnboardingNavigator';
-import UpgradeScreen from '../screens/subscription/UpgradeScreenV2';
+import UpgradeScreen from '../screens/subscription/UpgradeScreen';
 import TermsOfServiceScreen from '../screens/legal/TermsOfServiceScreen';
 import PrivacyPolicyScreen from '../screens/legal/PrivacyPolicyScreen';
 import BillSplitScreen from '../screens/premium/BillSplitScreen';

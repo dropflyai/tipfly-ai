@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,24 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Colors, Shadows, GlassStyles } from '../../constants/colors';
+import { Colors, Shadows } from '../../constants/colors';
 import { useUserStore } from '../../store/userStore';
 import { signOut } from '../../services/api/supabase';
 import { deleteUserAccount, exportUserData } from '../../services/api/user';
 import { lightHaptic, mediumHaptic } from '../../utils/haptics';
+import { formatCurrency } from '../../utils/formatting';
 
-export default function SettingsScreen() {
+export default function SettingsScreenV2() {
   const navigation = useNavigation();
   const { user, isPremium, clearUser, resetOnboarding, resetTour } = useUserStore();
+
+  // Calculate user stats for the profile hero
+  const memberSince = useMemo(() => {
+    if (!user?.created_at) return 'New Member';
+    const date = new Date(user.created_at);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `Member since ${months[date.getMonth()]} ${date.getFullYear()}`;
+  }, [user?.created_at]);
 
   const handleSignOut = () => {
     lightHaptic();
@@ -57,10 +66,9 @@ export default function SettingsScreen() {
       const data = await exportUserData();
       Alert.alert(
         'Data Exported',
-        'Your data has been prepared. In production, this would download a JSON file.',
+        'Your data has been prepared for download.',
         [{ text: 'OK' }]
       );
-      console.log('Exported data:', data);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to export data');
     }
@@ -70,51 +78,43 @@ export default function SettingsScreen() {
     lightHaptic();
     Alert.alert(
       'Delete Account',
-      'This will permanently delete your account and all your data. This action cannot be undone.\n\nAre you absolutely sure?',
+      'This will permanently delete your account and all your data. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete Everything',
           style: 'destructive',
-          onPress: confirmDeleteAccount,
-        },
-      ]
-    );
-  };
-
-  const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Final Confirmation',
-      'Last chance! This will delete:\n\n• All your tip entries\n• All your goals\n• All your data\n• Your account\n\nType DELETE to confirm',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Forever',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              mediumHaptic();
-              await deleteUserAccount();
-              clearUser();
-              Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete account');
-            }
+          onPress: () => {
+            Alert.alert(
+              'Final Confirmation',
+              'Are you absolutely sure? All your tip history, goals, and account data will be permanently deleted.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Forever',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      mediumHaptic();
+                      await deleteUserAccount();
+                      clearUser();
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'Failed to delete account');
+                    }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
     );
   };
 
-  const handleContactSupport = () => {
-    lightHaptic();
-    navigation.navigate('ContactSupport' as never);
-  };
-
   const handleRateApp = () => {
     lightHaptic();
     const storeUrl = Platform.select({
-      ios: 'https://apps.apple.com/app/idXXXXXXXX', // TODO: Replace with actual App Store ID
+      ios: 'https://apps.apple.com/app/idXXXXXXXX',
       android: 'https://play.google.com/store/apps/details?id=com.tipgenius.app',
     });
 
@@ -123,43 +123,18 @@ export default function SettingsScreen() {
         .then((supported) => {
           if (supported) {
             Linking.openURL(storeUrl);
-          } else {
-            Alert.alert('Error', 'Could not open store');
           }
         })
-        .catch(() => {
-          Alert.alert('Error', 'Could not open store');
-        });
+        .catch(() => {});
     }
   };
 
   const handleShareApp = async () => {
     lightHaptic();
     try {
-      const shareMessage = Platform.select({
-        ios: 'Check out TipFly AI - the best app for tracking tips and managing your earnings!\n\nhttps://apps.apple.com/app/idXXXXXXXX',
-        android: 'Check out TipFly AI - the best app for tracking tips and managing your earnings!\n\nhttps://play.google.com/store/apps/details?id=com.tipgenius.app',
-      });
-
-      const result = await Share.share({
-        message: shareMessage || 'Check out TipFly AI!',
-        title: 'Share TipFly AI',
-      });
-
-      if (result.action === Share.sharedAction) {
-        console.log('App shared successfully');
-      }
-    } catch (error: any) {
-      Alert.alert('Error', 'Failed to share app');
-    }
-  };
-
-  const handleAbout = () => {
-    lightHaptic();
-    Alert.alert(
-      'TipFly AI by DropFly',
-      'Track Your Tips, Master Your Money\n\nVersion 1.0.0\n\nPowered by DropFly'
-    );
+      const shareMessage = 'Check out TipFly AI - the best app for tracking tips! https://tipflyai.app';
+      await Share.share({ message: shareMessage, title: 'Share TipFly AI' });
+    } catch (error) {}
   };
 
   return (
@@ -170,117 +145,110 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Section */}
+        {/* Profile Hero Card */}
         <View style={styles.profileCard}>
-          <View style={styles.profileIcon}>
-            <Text style={styles.profileIconText}>
-              {user?.full_name?.charAt(0)?.toUpperCase() || '?'}
-            </Text>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>
+                {user?.full_name?.charAt(0)?.toUpperCase() || '?'}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{user?.full_name || 'User'}</Text>
+              <Text style={styles.profileEmail}>{user?.email}</Text>
+              <Text style={styles.memberSince}>{memberSince}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => {
+                lightHaptic();
+                navigation.navigate('EditProfile' as never);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="pencil" size={16} color={Colors.primary} />
+            </TouchableOpacity>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.full_name || 'User'}</Text>
-            <Text style={styles.profileEmail}>{user?.email}</Text>
-          </View>
+
+          {/* Subscription Status */}
           <TouchableOpacity
-            style={styles.editProfileButton}
-            onPress={() => {
-              lightHaptic();
-              navigation.navigate('EditProfile' as never);
-            }}
-            activeOpacity={0.7}
+            style={[styles.subscriptionBanner, isPremium() && styles.subscriptionBannerPremium]}
+            onPress={!isPremium() ? handleUpgrade : undefined}
+            activeOpacity={isPremium() ? 1 : 0.8}
           >
-            <Ionicons name="pencil" size={16} color={Colors.primary} />
+            <View style={styles.subscriptionLeft}>
+              <Ionicons
+                name={isPremium() ? 'star' : 'star-outline'}
+                size={20}
+                color={isPremium() ? Colors.gold : Colors.primary}
+              />
+              <View>
+                <Text style={[styles.subscriptionTitle, isPremium() && styles.subscriptionTitlePremium]}>
+                  {isPremium() ? 'Premium Member' : 'Free Plan'}
+                </Text>
+                <Text style={styles.subscriptionSubtitle}>
+                  {isPremium() ? 'All features unlocked' : 'Upgrade for more features'}
+                </Text>
+              </View>
+            </View>
+            {!isPremium() && (
+              <View style={styles.upgradeChip}>
+                <Text style={styles.upgradeChipText}>Upgrade</Text>
+                <Ionicons name="arrow-forward" size={14} color={Colors.white} />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Subscription Section */}
-        <View style={[
-          styles.subscriptionCard,
-          isPremium() && styles.subscriptionCardPremium
-        ]}>
-          <View style={styles.subscriptionHeader}>
-            <View style={[
-              styles.subscriptionIconContainer,
-              isPremium() && styles.subscriptionIconPremium
-            ]}>
-              <Ionicons
-                name={isPremium() ? "star" : "star-outline"}
-                size={24}
-                color={isPremium() ? Colors.gold : Colors.primary}
-              />
-            </View>
-            <View style={styles.subscriptionInfo}>
-              <Text style={[
-                styles.subscriptionPlan,
-                isPremium() && styles.subscriptionPlanPremium
-              ]}>
-                {isPremium() ? 'Premium' : 'Free Plan'}
-              </Text>
-              <Text style={styles.subscriptionDesc}>
-                {isPremium()
-                  ? 'Unlimited history, receipt scanning & more'
-                  : 'Upgrade to unlock all features'}
-              </Text>
-            </View>
-          </View>
-          {!isPremium() && (
-            <TouchableOpacity
-              style={styles.upgradeButton}
-              onPress={handleUpgrade}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.upgradeButtonText}>Upgrade</Text>
-              <Ionicons name="arrow-forward" size={16} color={Colors.background} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Premium Features */}
+        {/* Premium Features - Only for Premium Users */}
         {isPremium() && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Premium Features</Text>
-            <View style={styles.optionsList}>
-              <SettingsOption
+            <View style={styles.sectionHeader}>
+              <Ionicons name="star" size={16} color={Colors.gold} />
+              <Text style={styles.sectionTitle}>Premium Features</Text>
+            </View>
+            <View style={styles.menuCard}>
+              <MenuItem
                 icon="calculator"
-                title="Bill Split Calculator"
                 iconColor={Colors.gold}
+                title="Bill Split Calculator"
                 onPress={() => {
                   lightHaptic();
                   navigation.navigate('BillSplit' as never);
                 }}
               />
-              <SettingsOption
+              <MenuItem
                 icon="document-text"
-                title="Tax Tracking"
                 iconColor={Colors.gold}
+                title="Tax Tracking"
                 onPress={() => {
                   lightHaptic();
                   navigation.navigate('TaxTracking' as never);
                 }}
               />
-              <SettingsOption
+              <MenuItem
                 icon="trophy"
-                title="Goals"
                 iconColor={Colors.gold}
+                title="Goals"
                 onPress={() => {
                   lightHaptic();
                   navigation.navigate('Goals' as never);
                 }}
               />
-              <SettingsOption
+              <MenuItem
                 icon="download"
-                title="Export Reports"
                 iconColor={Colors.gold}
+                title="Export Reports"
                 onPress={() => {
                   lightHaptic();
                   navigation.navigate('ExportReports' as never);
                 }}
               />
-              <SettingsOption
+              <MenuItem
                 icon="document-text"
-                title="Income Summary Report"
-                subtitle="For apartments, loans & more"
                 iconColor={Colors.gold}
+                title="Income Summary"
+                subtitle="For apartments, loans & more"
                 onPress={() => {
                   lightHaptic();
                   navigation.navigate('IncomeVerification' as never);
@@ -291,12 +259,15 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* Settings Options */}
+        {/* App Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.optionsList}>
-            <SettingsOption
-              icon="briefcase"
+          <View style={styles.sectionHeader}>
+            <Ionicons name="settings-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.sectionTitle}>Settings</Text>
+          </View>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="briefcase-outline"
               title="Manage Jobs"
               subtitle="Track tips from multiple workplaces"
               onPress={() => {
@@ -304,7 +275,7 @@ export default function SettingsScreen() {
                 navigation.navigate('Jobs' as never);
               }}
             />
-            <SettingsOption
+            <MenuItem
               icon="notifications-outline"
               title="Notifications"
               onPress={() => {
@@ -312,7 +283,7 @@ export default function SettingsScreen() {
                 navigation.navigate('NotificationSettings' as never);
               }}
             />
-            <SettingsOption
+            <MenuItem
               icon="lock-closed-outline"
               title="Privacy"
               onPress={() => {
@@ -324,42 +295,36 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Support Section */}
+        {/* Support & Feedback */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.optionsList}>
-            <SettingsOption
+          <View style={styles.sectionHeader}>
+            <Ionicons name="help-circle-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.sectionTitle}>Support</Text>
+          </View>
+          <View style={styles.menuCard}>
+            <MenuItem
               icon="play-circle-outline"
               title="Replay App Tour"
-              subtitle="See the app tour again"
               onPress={() => {
                 lightHaptic();
                 resetTour();
-                Alert.alert(
-                  'Tour Reset',
-                  'The app tour will play when you return to the Home screen.',
-                  [
-                    {
-                      text: 'Go to Home',
-                      onPress: () => {
-                        navigation.navigate('Home' as never);
-                      },
-                    },
-                  ]
-                );
+                Alert.alert('Tour Reset', 'The app tour will play next time you open the Home screen.');
               }}
             />
-            <SettingsOption
+            <MenuItem
               icon="mail-outline"
               title="Contact Support"
-              onPress={handleContactSupport}
+              onPress={() => {
+                lightHaptic();
+                navigation.navigate('ContactSupport' as never);
+              }}
             />
-            <SettingsOption
+            <MenuItem
               icon="star-outline"
               title="Rate TipFly AI"
               onPress={handleRateApp}
             />
-            <SettingsOption
+            <MenuItem
               icon="share-social-outline"
               title="Share with Friends"
               onPress={handleShareApp}
@@ -368,17 +333,23 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* About Section */}
+        {/* About & Legal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.optionsList}>
-            <SettingsOption
+          <View style={styles.sectionHeader}>
+            <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.sectionTitle}>About</Text>
+          </View>
+          <View style={styles.menuCard}>
+            <MenuItem
               icon="information-circle-outline"
               title="About TipFly AI"
               value="v1.0.0"
-              onPress={handleAbout}
+              onPress={() => {
+                lightHaptic();
+                Alert.alert('TipFly AI', 'Track Your Tips, Master Your Money\n\nVersion 1.0.0\nPowered by DropFly');
+              }}
             />
-            <SettingsOption
+            <MenuItem
               icon="document-text-outline"
               title="Privacy Policy"
               onPress={() => {
@@ -386,7 +357,7 @@ export default function SettingsScreen() {
                 navigation.navigate('PrivacyPolicy' as never);
               }}
             />
-            <SettingsOption
+            <MenuItem
               icon="document-outline"
               title="Terms of Service"
               onPress={() => {
@@ -398,16 +369,19 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Data & Privacy Section */}
+        {/* Data & Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data & Privacy</Text>
-          <View style={styles.optionsList}>
-            <SettingsOption
+          <View style={styles.sectionHeader}>
+            <Ionicons name="shield-checkmark-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.sectionTitle}>Data & Privacy</Text>
+          </View>
+          <View style={styles.menuCard}>
+            <MenuItem
               icon="download-outline"
               title="Export My Data"
               onPress={handleExportData}
             />
-            <SettingsOption
+            <MenuItem
               icon="trash-outline"
               title="Delete Account"
               titleColor={Colors.error}
@@ -417,31 +391,21 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Developer Options */}
+        {/* Developer Options - Only in DEV */}
         {__DEV__ && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Developer</Text>
-            <View style={styles.optionsList}>
-              <SettingsOption
+            <View style={styles.sectionHeader}>
+              <Ionicons name="code-slash-outline" size={16} color={Colors.textSecondary} />
+              <Text style={styles.sectionTitle}>Developer</Text>
+            </View>
+            <View style={styles.menuCard}>
+              <MenuItem
                 icon="refresh-outline"
                 title="Reset Onboarding"
                 onPress={() => {
                   lightHaptic();
-                  Alert.alert(
-                    'Reset Onboarding',
-                    'This will restart the tutorial flow on next app restart.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Reset',
-                        onPress: () => {
-                          mediumHaptic();
-                          resetOnboarding();
-                          Alert.alert('Success', 'Onboarding has been reset.');
-                        },
-                      },
-                    ]
-                  );
+                  resetOnboarding();
+                  Alert.alert('Success', 'Onboarding has been reset.');
                 }}
                 isLast
               />
@@ -450,19 +414,21 @@ export default function SettingsScreen() {
         )}
 
         {/* Sign Out Button */}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={handleSignOut}
+          activeOpacity={0.8}
+        >
           <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
-        {/* Footer with DropFly Branding */}
+        {/* Footer */}
         <View style={styles.footer}>
+          <Text style={styles.footerText}>Powered by</Text>
           <View style={styles.footerBrand}>
-            <Text style={styles.footerPoweredBy}>Powered by</Text>
-            <View style={styles.footerLogoContainer}>
-              <Ionicons name="flash" size={16} color={Colors.primary} />
-              <Text style={styles.footerBrandName}>DropFly</Text>
-            </View>
+            <Ionicons name="flash" size={14} color={Colors.primary} />
+            <Text style={styles.footerBrandText}>DropFly</Text>
           </View>
           <Text style={styles.footerTagline}>Made with care for service workers</Text>
         </View>
@@ -471,45 +437,42 @@ export default function SettingsScreen() {
   );
 }
 
-function SettingsOption({
-  icon,
-  title,
-  subtitle,
-  value,
-  titleColor,
-  iconColor,
-  onPress,
-  isLast,
-}: {
+interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
   title: string;
   subtitle?: string;
   value?: string;
   titleColor?: string;
-  iconColor?: string;
   onPress: () => void;
   isLast?: boolean;
-}) {
+}
+
+function MenuItem({
+  icon,
+  iconColor = Colors.primary,
+  title,
+  subtitle,
+  value,
+  titleColor,
+  onPress,
+  isLast,
+}: MenuItemProps) {
   return (
     <TouchableOpacity
-      style={[styles.optionItem, isLast && styles.optionItemLast]}
+      style={[styles.menuItem, isLast && styles.menuItemLast]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.optionLeft}>
-        <View style={[
-          styles.optionIconContainer,
-          iconColor === Colors.gold && styles.optionIconContainerGold
-        ]}>
-          <Ionicons name={icon} size={20} color={iconColor || Colors.primary} />
-        </View>
-        <View style={styles.optionTextContainer}>
-          <Text style={[styles.optionTitle, titleColor && { color: titleColor }]}>{title}</Text>
-          {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
-        </View>
+      <View style={[styles.menuIconContainer, iconColor === Colors.gold && styles.menuIconGold]}>
+        <Ionicons name={icon} size={18} color={iconColor} />
       </View>
-      <View style={styles.optionRight}>
-        {value && <Text style={styles.optionValue}>{value}</Text>}
+      <View style={styles.menuTextContainer}>
+        <Text style={[styles.menuTitle, titleColor && { color: titleColor }]}>{title}</Text>
+        {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
+      </View>
+      <View style={styles.menuRight}>
+        {value && <Text style={styles.menuValue}>{value}</Text>}
         <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
       </View>
     </TouchableOpacity>
@@ -531,7 +494,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: Colors.text,
   },
   scrollView: {
@@ -540,27 +503,34 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 120,
-    gap: 20,
   },
-  // Profile Card - Glass with blue glow
+
+  // Profile Card
   profileCard: {
-    ...GlassStyles.card,
+    backgroundColor: Colors.card,
+    borderRadius: 20,
     padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+    marginBottom: 16,
   },
-  profileIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  avatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.glowBlueSubtle,
   },
-  profileIconText: {
-    fontSize: 28,
+  avatarText: {
+    fontSize: 24,
     fontWeight: '700',
     color: Colors.white,
   },
@@ -571,81 +541,82 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
-  editProfileButton: {
+  memberSince: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 4,
+  },
+  editButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    backgroundColor: Colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Subscription Card
-  subscriptionCard: {
-    ...GlassStyles.card,
-    padding: 20,
-    gap: 16,
-  },
-  subscriptionCardPremium: {
-    borderColor: 'rgba(255, 215, 0, 0.3)',
-    ...Shadows.glowGoldSubtle,
-  },
-  subscriptionHeader: {
+  subscriptionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-  },
-  subscriptionIconContainer: {
-    width: 48,
-    height: 48,
+    justifyContent: 'space-between',
+    backgroundColor: Colors.backgroundTertiary,
     borderRadius: 14,
-    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  subscriptionBannerPremium: {
+    borderColor: Colors.gold + '40',
+    backgroundColor: Colors.gold + '10',
+  },
+  subscriptionLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
   },
-  subscriptionIconPremium: {
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
-  },
-  subscriptionInfo: {
-    flex: 1,
-  },
-  subscriptionPlan: {
-    fontSize: 18,
-    fontWeight: '700',
+  subscriptionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
     color: Colors.text,
-    marginBottom: 2,
   },
-  subscriptionPlanPremium: {
+  subscriptionTitlePremium: {
     color: Colors.gold,
   },
-  subscriptionDesc: {
-    fontSize: 14,
+  subscriptionSubtitle: {
+    fontSize: 12,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
-  upgradeButton: {
+  upgradeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.gold,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-    ...Shadows.buttonGold,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
   },
-  upgradeButtonText: {
-    color: Colors.background,
-    fontSize: 15,
-    fontWeight: '700',
+  upgradeChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.white,
   },
+
   // Sections
   section: {
-    gap: 12,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingLeft: 4,
   },
   sectionTitle: {
     fontSize: 13,
@@ -653,105 +624,101 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginLeft: 4,
   },
-  optionsList: {
-    ...GlassStyles.card,
-    padding: 0,
+  menuCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
     overflow: 'hidden',
   },
-  optionItem: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
+    gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: Colors.border,
   },
-  optionItemLast: {
+  menuItemLast: {
     borderBottomWidth: 0,
   },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    flex: 1,
-  },
-  optionIconContainer: {
+  menuIconContainer: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(0, 168, 232, 0.12)',
+    backgroundColor: Colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionIconContainerGold: {
-    backgroundColor: 'rgba(255, 215, 0, 0.12)',
+  menuIconGold: {
+    backgroundColor: Colors.gold + '15',
   },
-  optionTextContainer: {
+  menuTextContainer: {
     flex: 1,
   },
-  optionTitle: {
+  menuTitle: {
     fontSize: 16,
-    color: Colors.text,
     fontWeight: '500',
+    color: Colors.text,
   },
-  optionSubtitle: {
+  menuSubtitle: {
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  optionRight: {
+  menuRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  optionValue: {
+  menuValue: {
     fontSize: 14,
     color: Colors.textSecondary,
   },
-  // Sign Out Button
+
+  // Sign Out
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.error + '30',
+    borderRadius: 14,
     padding: 16,
-    ...GlassStyles.card,
-    borderColor: 'rgba(255, 59, 48, 0.2)',
+    gap: 8,
+    marginBottom: 24,
   },
-  signOutButtonText: {
+  signOutText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.error,
   },
-  // Footer with DropFly Branding
+
+  // Footer
   footer: {
     alignItems: 'center',
     paddingTop: 8,
-    gap: 8,
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 12,
+    color: Colors.textMuted,
   },
   footerBrand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  footerPoweredBy: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  footerLogoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 4,
   },
-  footerBrandName: {
+  footerBrandText: {
     fontSize: 14,
     fontWeight: '700',
     color: Colors.primary,
   },
   footerTagline: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 4,
   },
 });
