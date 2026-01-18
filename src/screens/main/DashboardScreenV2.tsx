@@ -31,6 +31,7 @@ import { generateShiftPrediction, ShiftPrediction } from '../../services/ai/pred
 import { generateDailyInsight, DailyInsight } from '../../services/ai/insights';
 import { useGamificationStore } from '../../store/gamificationStore';
 import { initializeGamification } from '../../services/api/gamification';
+import { openAddTipModal } from '../../navigation/MainTabNavigator';
 
 export default function DashboardScreenV2() {
   const navigation = useNavigation();
@@ -176,8 +177,7 @@ export default function DashboardScreenV2() {
   };
 
   const handleAddTips = () => {
-    mediumHaptic();
-    navigation.navigate('AddTip' as never);
+    openAddTipModal();
   };
 
   const weekChangePercent = lastWeekTotal > 0

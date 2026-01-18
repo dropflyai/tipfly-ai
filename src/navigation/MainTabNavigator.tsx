@@ -193,6 +193,16 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // Global state for tour navigation (allows navigation from outside navigator context)
 let globalTabNavigate: ((tabName: keyof TabParamList) => void) | null = null;
 
+// Global callback to open Add Tip modal from any screen
+let globalOpenAddTip: (() => void) | null = null;
+
+// Export function to open Add Tip modal from outside this component
+export const openAddTipModal = () => {
+  if (globalOpenAddTip) {
+    globalOpenAddTip();
+  }
+};
+
 // Wrapper component to capture navigation from within the tab navigator
 function DashboardScreenWrapper(props: any) {
   // Store navigation function globally when this screen mounts
@@ -213,6 +223,17 @@ export default function MainTabNavigator() {
 
   const [showAddTipModal, setShowAddTipModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
+
+  // Set global callback for opening Add Tip modal
+  useEffect(() => {
+    globalOpenAddTip = () => {
+      mediumHaptic();
+      setShowAddTipModal(true);
+    };
+    return () => {
+      globalOpenAddTip = null;
+    };
+  }, []);
 
   // Fetch pending pools on mount
   useEffect(() => {
