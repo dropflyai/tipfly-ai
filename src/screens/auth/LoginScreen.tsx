@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -18,13 +17,15 @@ import { RootStackParamList } from '../../types';
 import { Colors, GradientColors, Shadows, GlassStyles } from '../../constants/colors';
 import { supabase } from '../../services/api/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { mediumHaptic } from '../../utils/haptics';
+import { mediumHaptic, errorHaptic, successHaptic } from '../../utils/haptics';
+import { useAlert } from '../../contexts/AlertContext';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
 };
 
 export default function LoginScreen({ navigation }: Props) {
+  const { success, error: showError, confirm } = useAlert();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,45 +36,41 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      Alert.alert('Email Required', 'Please enter your email address first, then tap "Forgot Password?"');
+      errorHaptic();
+      showError('Email Required', 'Please enter your email address first, then tap "Forgot Password?"');
       return;
     }
 
-    Alert.alert(
+    confirm(
       'Reset Password',
-      `Send password reset link to:\n\n${email}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send Link',
-          onPress: async () => {
-            setSendingReset(true);
-            try {
-              const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-                redirectTo: 'tipflyai://reset-password',
-              });
+      `Send password reset link to ${email}?`,
+      async () => {
+        setSendingReset(true);
+        try {
+          const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+            redirectTo: 'tipflyai://reset-password',
+          });
 
-              if (error) throw error;
+          if (error) throw error;
 
-              Alert.alert(
-                'Check Your Email',
-                'We sent a password reset link to your email. Click the link to create a new password.',
-                [{ text: 'OK' }]
-              );
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to send reset email. Please try again.');
-            } finally {
-              setSendingReset(false);
-            }
-          },
-        },
-      ]
+          successHaptic();
+          success('Check Your Email', 'We sent a password reset link to your email.');
+        } catch (err: any) {
+          errorHaptic();
+          showError('Error', err.message || 'Failed to send reset email.');
+        } finally {
+          setSendingReset(false);
+        }
+      },
+      'Send Link',
+      false
     );
   };
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      errorHaptic();
+      showError('Missing Info', 'Please fill in all fields');
       return;
     }
 
@@ -89,8 +86,9 @@ export default function LoginScreen({ navigation }: Props) {
       if (error) throw error;
 
       // Navigation will be handled by AppNavigator listening to auth state
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
+    } catch (err: any) {
+      errorHaptic();
+      showError('Login Failed', err.message);
     } finally {
       setLoading(false);
     }

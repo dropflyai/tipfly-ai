@@ -500,13 +500,13 @@ export default function DashboardScreenV2() {
               activeOpacity={0.9}
             >
               <LinearGradient
-                colors={GradientColors.gold}
+                colors={['#0077B6', '#005F8A', '#004466']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.upgradeGradient}
               >
                 <View style={styles.upgradeIconContainer}>
-                  <Ionicons name="sparkles" size={24} color={Colors.white} />
+                  <Ionicons name="sparkles" size={24} color={Colors.gold} />
                 </View>
                 <View style={styles.upgradeContent}>
                   <Text style={styles.upgradeTitle}>Know what you'll earn</Text>
@@ -514,7 +514,9 @@ export default function DashboardScreenV2() {
                     Unlock AI predictions, goals & tax reports
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color={Colors.white} />
+                <View style={styles.upgradeArrow}>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.white} />
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           )}
@@ -838,7 +840,9 @@ const styles = StyleSheet.create({
   upgradeCard: {
     borderRadius: 20,
     overflow: 'hidden',
-    ...Shadows.buttonGold,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 168, 232, 0.3)',
+    ...Shadows.buttonBlue,
   },
   upgradeGradient: {
     padding: 18,
@@ -847,10 +851,10 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   upgradeIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -858,14 +862,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   upgradeTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
-    marginBottom: 3,
+    marginBottom: 4,
   },
   upgradeSubtitle: {
     fontSize: 13,
-    color: Colors.white,
-    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 18,
+  },
+  upgradeArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

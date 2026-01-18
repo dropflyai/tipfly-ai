@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useSubscriptionStore } from './src/store/subscriptionStore';
+import { AlertProvider } from './src/contexts/AlertContext';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -26,7 +27,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AppNavigator />
+      <AlertProvider>
+        <AppNavigator />
+      </AlertProvider>
     </SafeAreaProvider>
   );
 }

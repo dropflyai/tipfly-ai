@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -19,13 +18,15 @@ import { Colors, GradientColors, Shadows, GlassStyles } from '../../constants/co
 import { supabase } from '../../services/api/supabase';
 import { validateEmail, validatePassword, sanitizeInput } from '../../utils/security';
 import { Ionicons } from '@expo/vector-icons';
-import { mediumHaptic } from '../../utils/haptics';
+import { mediumHaptic, errorHaptic } from '../../utils/haptics';
+import { useAlert } from '../../contexts/AlertContext';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Signup'>;
 };
 
 export default function SignupScreen({ navigation }: Props) {
+  const { error: showError } = useAlert();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -37,20 +38,23 @@ export default function SignupScreen({ navigation }: Props) {
 
   const handleSignup = async () => {
     if (!email || !password || !fullName) {
-      Alert.alert('Error', 'Please fill in all fields');
+      errorHaptic();
+      showError('Missing Info', 'Please fill in all fields');
       return;
     }
 
     // Validate email
     if (!validateEmail(email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      errorHaptic();
+      showError('Invalid Email', 'Please enter a valid email address');
       return;
     }
 
     // Validate password strength
     const passwordCheck = validatePassword(password);
     if (!passwordCheck.valid) {
-      Alert.alert('Weak Password', passwordCheck.error);
+      errorHaptic();
+      showError('Weak Password', passwordCheck.error || 'Please use a stronger password');
       return;
     }
 
@@ -111,9 +115,10 @@ export default function SignupScreen({ navigation }: Props) {
 
       // Success! User is now automatically logged in
       // AppNavigator will detect the auth state change and navigate to onboarding
-    } catch (error: any) {
-      console.error('[SignupScreen] Signup error:', error);
-      Alert.alert('Error', error.message || 'Failed to create account');
+    } catch (err: any) {
+      console.error('[SignupScreen] Signup error:', err);
+      errorHaptic();
+      showError('Signup Failed', err.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
