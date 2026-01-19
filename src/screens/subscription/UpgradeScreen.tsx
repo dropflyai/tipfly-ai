@@ -229,30 +229,30 @@ export default function UpgradeScreenV2() {
             <Text style={styles.statsSubtitle}>Don't lose access to your data!</Text>
 
             <View style={styles.statsGrid}>
-              {personalBests?.lifetimeTotal && personalBests.lifetimeTotal > 0 && (
+              {personalBests?.lifetimeTotal != null && personalBests.lifetimeTotal > 0 ? (
                 <View style={styles.statBox}>
                   <Text style={styles.statBoxValue}>{formatCurrency(personalBests.lifetimeTotal)}</Text>
                   <Text style={styles.statBoxLabel}>Total Earned</Text>
                 </View>
-              )}
-              {streak?.total_tips_logged && streak.total_tips_logged > 0 && (
+              ) : null}
+              {streak?.total_tips_logged != null && streak.total_tips_logged > 0 ? (
                 <View style={styles.statBox}>
                   <Text style={styles.statBoxValue}>{streak.total_tips_logged}</Text>
                   <Text style={styles.statBoxLabel}>Tips Logged</Text>
                 </View>
-              )}
-              {streak?.current_streak && streak.current_streak > 0 && (
+              ) : null}
+              {streak?.current_streak != null && streak.current_streak > 0 ? (
                 <View style={styles.statBox}>
                   <Text style={styles.statBoxValue}>{streak.current_streak} 🔥</Text>
                   <Text style={styles.statBoxLabel}>Day Streak</Text>
                 </View>
-              )}
-              {personalBests?.bestDay && (
+              ) : null}
+              {personalBests?.bestDay ? (
                 <View style={styles.statBox}>
                   <Text style={styles.statBoxValue}>{formatCurrency(personalBests.bestDay.amount)}</Text>
                   <Text style={styles.statBoxLabel}>Best Day</Text>
                 </View>
-              )}
+              ) : null}
             </View>
 
             <View style={styles.statsWarning}>
