@@ -169,7 +169,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="100.00"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={billAmount}
                   onChangeText={setBillAmount}
                   keyboardType="decimal-pad"
@@ -184,7 +184,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="2"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={numberOfPeople}
                   onChangeText={setNumberOfPeople}
                   keyboardType="number-pad"
@@ -224,7 +224,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Custom %"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={customTip}
                   onChangeText={setCustomTip}
                   keyboardType="decimal-pad"
@@ -275,7 +275,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="500.00"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={totalTips}
                   onChangeText={setTotalTips}
                   keyboardType="decimal-pad"
@@ -290,7 +290,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="3"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={numberOfStaff}
                   onChangeText={setNumberOfStaff}
                   keyboardType="number-pad"
@@ -306,7 +306,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="70"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={frontOfHousePercent}
                   onChangeText={setFrontOfHousePercent}
                   keyboardType="decimal-pad"
@@ -322,7 +322,7 @@ export default function BillSplitScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="30"
-                  placeholderTextColor={Colors.gray400}
+                  placeholderTextColor={Colors.gray500}
                   value={backOfHousePercent}
                   onChangeText={setBackOfHousePercent}
                   keyboardType="decimal-pad"
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   modeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: Colors.gray600,
   },
   modeButtonTextActive: {
     color: Colors.white,
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   quickButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: Colors.gray600,
   },
   quickButtonTextActive: {
     color: Colors.white,
