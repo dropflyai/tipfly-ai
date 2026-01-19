@@ -21,7 +21,7 @@ import { formatCurrency } from '../../utils/formatting';
 
 export default function SettingsScreenV2() {
   const navigation = useNavigation();
-  const { user, isPremium, clearUser, resetOnboarding, resetTour } = useUserStore();
+  const { user, isPremium, clearUser } = useUserStore();
 
   // Calculate user stats for the profile hero
   const memberSince = useMemo(() => {
@@ -390,28 +390,6 @@ export default function SettingsScreenV2() {
             />
           </View>
         </View>
-
-        {/* Developer Options - Only in DEV */}
-        {__DEV__ && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="code-slash-outline" size={16} color={Colors.textSecondary} />
-              <Text style={styles.sectionTitle}>Developer</Text>
-            </View>
-            <View style={styles.menuCard}>
-              <MenuItem
-                icon="refresh-outline"
-                title="Reset Onboarding"
-                onPress={() => {
-                  lightHaptic();
-                  resetOnboarding();
-                  Alert.alert('Success', 'Onboarding has been reset.');
-                }}
-                isLast
-              />
-            </View>
-          </View>
-        )}
 
         {/* Sign Out Button */}
         <TouchableOpacity
