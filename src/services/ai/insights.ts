@@ -133,8 +133,8 @@ Average per Shift: ${formatCurrency(analysis.averagePerShift)}
 Average Hourly Rate: ${formatCurrency(analysis.averageHourlyRate)}/hr
 Best Day: ${analysis.bestDay?.day} (${formatCurrency(analysis.bestDay?.avgTips || 0)} avg)
 Worst Day: ${analysis.worstDay?.day} (${formatCurrency(analysis.worstDay?.avgTips || 0)} avg)
-Consistency Score: ${(analysis.consistencyScore * 100).toFixed(0)}%
-Recent Trend: ${analysis.trendDirection > 0 ? '+' : ''}${analysis.trendDirection.toFixed(1)}%
+Consistency Score: ${((analysis.consistencyScore || 0) * 100).toFixed(0)}%
+Recent Trend: ${(analysis.trendDirection || 0) > 0 ? '+' : ''}${(analysis.trendDirection || 0).toFixed(1)}%
 
 Generate a single insight in this exact JSON format:
 {
@@ -183,7 +183,7 @@ function getFallbackInsight(analysis: any): DailyInsight {
     };
   }
 
-  if (analysis.trendDirection > 10) {
+  if (analysis.trendDirection && analysis.trendDirection > 10) {
     return {
       insight: "Your earnings are trending up!",
       action: `Keep up the momentum - you're up ${analysis.trendDirection.toFixed(0)}%`,
