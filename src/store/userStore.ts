@@ -68,6 +68,9 @@ export const useUserStore = create<UserState>()(
       completeOnboarding: async () => {
         set({ hasCompletedOnboarding: true });
 
+        // Store the completion timestamp for tax banner delay logic
+        await AsyncStorage.setItem('onboardingCompletedAt', new Date().toISOString());
+
         // Also update in database
         const { user } = get();
         if (user?.id) {

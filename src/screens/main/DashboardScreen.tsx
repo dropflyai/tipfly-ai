@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,7 +53,7 @@ export default function DashboardScreenV2() {
   const [showUpgradeTrigger, setShowUpgradeTrigger] = useState(false);
   const [upgradeTriggerType, setUpgradeTriggerType] = useState<'tip_milestone' | 'weekly_summary'>('tip_milestone');
   const [totalTipsLogged, setTotalTipsLogged] = useState(0);
-  const [showTaxBanner, setShowTaxBanner] = useState(true);
+  const [showTaxBanner, setShowTaxBanner] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
   const pulseAnim = useState(new Animated.Value(1))[0];
@@ -67,6 +68,43 @@ export default function DashboardScreenV2() {
   useEffect(() => {
     initializeGamification();
   }, []);
+
+  // Check if we should show the tax season banner
+  // Only show after user has logged at least 1 tip and hasn't dismissed it
+  useEffect(() => {
+    const checkTaxBannerVisibility = async () => {
+      try {
+        const dismissed = await AsyncStorage.getItem('taxBannerDismissed');
+        const onboardingCompletedAt = await AsyncStorage.getItem('onboardingCompletedAt');
+
+        // Don't show if dismissed
+        if (dismissed === 'true') {
+          setShowTaxBanner(false);
+          return;
+        }
+
+        // Don't show immediately after onboarding (wait at least 1 day)
+        if (onboardingCompletedAt) {
+          const completedDate = new Date(onboardingCompletedAt);
+          const now = new Date();
+          const hoursSinceOnboarding = (now.getTime() - completedDate.getTime()) / (1000 * 60 * 60);
+          if (hoursSinceOnboarding < 24) {
+            setShowTaxBanner(false);
+            return;
+          }
+        }
+
+        // Only show if user has logged at least 1 tip
+        if (totalTipsLogged > 0) {
+          setShowTaxBanner(true);
+        }
+      } catch (error) {
+        console.error('Error checking tax banner visibility:', error);
+      }
+    };
+
+    checkTaxBannerVisibility();
+  }, [totalTipsLogged]);
 
   useEffect(() => {
     if (!loading && stats) {
@@ -263,12 +301,15 @@ export default function DashboardScreenV2() {
           {/* Streak Warning - Shows when streak at risk */}
           <StreakWarning onLogTip={handleAddTips} />
 
-          {/* Tax Season Banner - Shows Jan-Apr for free users */}
+          {/* Tax Season Banner - Shows Jan-Apr for free users with tips */}
           {!isPremium && showTaxBanner && (
             <TaxSeasonBanner
               totalTips={stats?.month.tips || 0}
               onPress={() => navigation.navigate('Upgrade' as never)}
-              onDismiss={() => setShowTaxBanner(false)}
+              onDismiss={async () => {
+                setShowTaxBanner(false);
+                await AsyncStorage.setItem('taxBannerDismissed', 'true');
+              }}
             />
           )}
 
