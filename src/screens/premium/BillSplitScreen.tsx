@@ -467,14 +467,14 @@ const styles = StyleSheet.create({
   inputPrefix: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.text,
+    color: Colors.gray900,
     marginRight: 8,
   },
   input: {
     flex: 1,
     paddingVertical: 16,
     fontSize: 16,
-    color: Colors.text,
+    color: Colors.gray900,
   },
   inputSuffix: {
     fontSize: 14,
