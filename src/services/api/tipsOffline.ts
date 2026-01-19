@@ -35,7 +35,7 @@ export const createTipEntryOffline = async (
       if (error) throw error;
 
       // Track successful online add
-      Analytics.tipAdded(tipData.amount, tipData.shift_type || 'day', false);
+      Analytics.tipAdded(tipData.tips_earned, tipData.shift_type || 'day', false);
 
       return data;
     } catch (error) {
@@ -55,7 +55,7 @@ export const createTipEntryOffline = async (
   addPendingTip(pendingTip);
 
   // Track offline add
-  Analytics.track('tip_added_offline', { amount: tipData.amount });
+  Analytics.track('tip_added_offline', { amount: tipData.tips_earned });
 
   console.log('[Tips] Queued tip for offline sync:', pendingTip.id);
 
@@ -66,7 +66,7 @@ export const createTipEntryOffline = async (
 export const updateTipEntryOffline = async (
   id: string,
   updates: Partial<TipEntry>
-): Promise<TipEntry | PendingEdit> => {
+): Promise<TipEntry | PendingTip | PendingEdit> => {
   const { isOnline, addPendingEdit, pendingTips, removePendingTip, addPendingTip } = useOfflineStore.getState();
 
   // Check if this is a pending (not yet synced) tip

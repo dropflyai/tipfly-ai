@@ -4,6 +4,7 @@ export type RootStackParamList = {
   Landing: undefined;
   Welcome: undefined;
   JobSelection: undefined;
+  QuickSetup: undefined;
   Login: undefined;
   Signup: undefined;
   ResetPassword: undefined;
@@ -25,6 +26,7 @@ export type User = {
   job_title?: string;
   onboarding_completed: boolean;
   subscription_tier: 'free' | 'premium';
+  email_confirmed_at?: string | null;
   created_at: string;
 };
 

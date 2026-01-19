@@ -275,11 +275,8 @@ export default function AppNavigator() {
         onClose={clearGoalCelebration}
       />
 
-      {/* Badge Celebration Modal */}
-      <BadgeCelebrationModal
-        badge={pendingBadgeCelebration}
-        onClose={clearBadgeCelebration}
-      />
+      {/* Badge Celebration Modal - uses internal store state */}
+      <BadgeCelebrationModal />
 
       <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>

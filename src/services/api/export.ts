@@ -1,7 +1,7 @@
 // Export API - Generate and share reports in various formats
 import { supabase } from './supabase';
-import { TipEntry } from './tips';
-import { Deduction } from './tax';
+import { TipEntry } from '../../types';
+import { Deduction } from '../../types';
 
 export interface ExportOptions {
   startDate: Date;
@@ -92,7 +92,7 @@ export const generateExportData = async (
     }
 
     // Calculate summary
-    const totalTips = entries.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+    const totalTips = entries.reduce((sum, entry) => sum + (entry.tips_earned || 0), 0);
     const totalHours = entries.reduce((sum, entry) => sum + (entry.hours_worked || 0), 0);
     const avgPerHour = totalHours > 0 ? totalTips / totalHours : 0;
     const totalDeductions = deductions?.reduce(
@@ -137,7 +137,7 @@ export const exportToCSV = (data: ExportData): string => {
   csv += 'Date,Amount,Hours,Shift Type,Notes\n';
   data.entries.forEach(entry => {
     const date = new Date(entry.date).toLocaleDateString();
-    const amount = entry.amount?.toFixed(2) || '0.00';
+    const amount = entry.tips_earned?.toFixed(2) || '0.00';
     const hours = entry.hours_worked?.toFixed(2) || '0';
     const shiftType = entry.shift_type || '';
     const notes = (entry.notes || '').replace(/,/g, ';'); // Replace commas in notes
@@ -322,7 +322,7 @@ export const generatePDFHTML = (data: ExportData, startDate: Date, endDate: Date
       day: 'numeric',
       year: 'numeric'
     });
-    const amount = entry.amount?.toFixed(2) || '0.00';
+    const amount = entry.tips_earned?.toFixed(2) || '0.00';
     const hours = entry.hours_worked?.toFixed(2) || '0';
     const shiftType = entry.shift_type || '-';
     const notes = entry.notes || '-';
@@ -1345,7 +1345,7 @@ export const getIncomeVerificationData = async (
     const entries = await getEntriesForExport(startDate, endDate);
 
     // Calculate totals - handle both tips_earned and amount fields
-    const grossIncome = entries.reduce((sum, e) => sum + ((e as any).tips_earned || (e as any).amount || 0), 0);
+    const grossIncome = entries.reduce((sum, e) => sum + ((e as any).tips_earned || (e as any).tips_earned || 0), 0);
     const tipOut = entries.reduce((sum, e) => sum + ((e as any).tip_out || 0), 0);
     const netIncome = grossIncome - tipOut;
     const totalShifts = entries.length;
@@ -1366,7 +1366,7 @@ export const getIncomeVerificationData = async (
           monthlyData[monthKey] = { income: 0, shifts: 0, hours: 0 };
         }
 
-        const entryIncome = ((entry as any).tips_earned || (entry as any).amount || 0) - ((entry as any).tip_out || 0);
+        const entryIncome = ((entry as any).tips_earned || (entry as any).tips_earned || 0) - ((entry as any).tip_out || 0);
         monthlyData[monthKey].income += entryIncome;
         monthlyData[monthKey].shifts += 1;
         monthlyData[monthKey].hours += entry.hours_worked || 0;

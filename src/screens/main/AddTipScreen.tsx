@@ -35,6 +35,7 @@ import JobSelector from '../../components/common/JobSelector';
 import VoiceInputButton from '../../components/common/VoiceInputButton';
 import ImportEarningsScreen from '../import/ImportEarningsScreen';
 import ScanReceiptScreen from '../import/ScanReceiptScreen';
+import { MilestoneCelebration, MilestoneType, RandomDelight, shouldShowDelight, getRandomDelightType } from '../../components/gamification';
 
 interface AddTipScreenV2Props {
   onClose?: () => void;
@@ -72,6 +73,14 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   // Import modal state
   const [showImportEarnings, setShowImportEarnings] = useState(false);
   const [showScanReceipt, setShowScanReceipt] = useState(false);
+
+  // Milestone celebration state
+  const [showMilestone, setShowMilestone] = useState(false);
+  const [currentMilestone, setCurrentMilestone] = useState<MilestoneType | null>(null);
+
+  // Random delight state
+  const [showDelight, setShowDelight] = useState(false);
+  const [delightType, setDelightType] = useState<'confetti' | 'sparkle' | 'emoji_burst'>('confetti');
 
   // Tip count tracking
   const incrementTipCount = useAnimationStore((state) => state.incrementTipCount);
@@ -336,21 +345,47 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
         setSelectedPosition(defaultPos || null);
       }
 
-      await incrementTipCount();
+      const result = await incrementTipCount();
 
-      success(
-        'Tip Logged!',
-        `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`
-      );
+      // Check for milestone celebration (10, 25, 50, 100, 250, 500, 1000)
+      const validMilestones: MilestoneType[] = [10, 25, 50, 100, 250, 500, 1000];
+      const isCelebratableMilestone = result.shouldCelebrate &&
+        result.milestone &&
+        validMilestones.includes(result.milestone as MilestoneType);
 
-      // Close after showing success
-      setTimeout(() => {
-        if (onClose) {
-          onClose();
+      if (isCelebratableMilestone && result.milestone) {
+        setCurrentMilestone(result.milestone as MilestoneType);
+        setShowMilestone(true);
+        // Don't show regular success or navigate - milestone modal handles it
+      } else {
+        // Check for random delight (8% chance)
+        const willShowDelight = shouldShowDelight();
+        if (willShowDelight) {
+          setDelightType(getRandomDelightType());
+          setShowDelight(true);
+          // Delay success message until after delight
+          setTimeout(() => {
+            success(
+              'Tip Logged!',
+              `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`
+            );
+          }, 500);
         } else {
-          navigation.navigate('Home' as never);
+          success(
+            'Tip Logged!',
+            `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`
+          );
         }
-      }, 1500);
+
+        // Close after showing success
+        setTimeout(() => {
+          if (onClose) {
+            onClose();
+          } else {
+            navigation.navigate('Home' as never);
+          }
+        }, willShowDelight ? 2500 : 1500);
+      }
     } catch (err: any) {
       errorHaptic();
       let errorTitle = 'Unable to Save';
@@ -403,6 +438,24 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
     const clockInTime = new Date(now.getTime() - (hours * 60 * 60 * 1000));
     setClockIn(clockInTime);
     setClockOut(now);
+  };
+
+  const handleMilestoneContinue = () => {
+    setShowMilestone(false);
+    setCurrentMilestone(null);
+
+    // Navigate after milestone celebration
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.navigate('Home' as never);
+    }
+  };
+
+  const handleMilestoneUpgrade = () => {
+    setShowMilestone(false);
+    setCurrentMilestone(null);
+    navigation.navigate('Premium' as never);
   };
 
   return (
@@ -858,6 +911,24 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
       >
         <ScanReceiptScreen onClose={() => setShowScanReceipt(false)} />
       </Modal>
+
+      {/* Milestone Celebration Modal */}
+      {currentMilestone && (
+        <MilestoneCelebration
+          visible={showMilestone}
+          milestone={currentMilestone}
+          isPremium={isPremium}
+          onContinue={handleMilestoneContinue}
+          onUpgrade={handleMilestoneUpgrade}
+        />
+      )}
+
+      {/* Random Delight Overlay */}
+      <RandomDelight
+        visible={showDelight}
+        type={delightType}
+        onComplete={() => setShowDelight(false)}
+      />
     </SafeAreaView>
   );
 }

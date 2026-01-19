@@ -159,7 +159,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           set({ isLoading: true, error: null });
 
           const customerInfo = await restorePurchases();
-          const isPremium = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT] !== undefined;
+          const isPremium = customerInfo?.entitlements?.active?.[PREMIUM_ENTITLEMENT] !== undefined;
 
           await get().refreshStatus();
 

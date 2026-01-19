@@ -19,6 +19,9 @@ import { useSubscriptionStore } from '../../store/subscriptionStore';
 import { formatPrice, getMonthlyEquivalent, calculateSavings } from '../../services/purchases/revenuecat';
 import { useAlert } from '../../contexts/AlertContext';
 import { lightHaptic, mediumHaptic, successHaptic } from '../../utils/haptics';
+import { useGamificationStore } from '../../store/gamificationStore';
+import { formatCurrency } from '../../utils/formatting';
+import { getPersonalBests, PersonalBests } from '../../services/api/leaderboard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,6 +40,9 @@ export default function UpgradeScreenV2() {
   const navigation = useNavigation();
   const { success, error: showError, confirm } = useAlert();
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan>('annual');
+  const [personalBests, setPersonalBests] = useState<PersonalBests | null>(null);
+
+  const { streak } = useGamificationStore();
 
   const {
     packages,
@@ -51,7 +57,17 @@ export default function UpgradeScreenV2() {
 
   useEffect(() => {
     loadOfferings();
+    loadUserStats();
   }, []);
+
+  const loadUserStats = async () => {
+    try {
+      const bests = await getPersonalBests();
+      setPersonalBests(bests);
+    } catch (err) {
+      console.error('[UpgradeScreen] Error loading user stats:', err);
+    }
+  };
 
   const monthlyPackage = packages.find(
     (pkg) =>
@@ -202,6 +218,51 @@ export default function UpgradeScreenV2() {
             <Text style={styles.heroSubtitle}>Join 10,000+ workers maximizing their income</Text>
           </LinearGradient>
         </View>
+
+        {/* Your Stats - Loss Aversion Card */}
+        {(personalBests?.hasData || (streak?.total_tips_logged && streak.total_tips_logged > 0)) && (
+          <View style={styles.statsCard}>
+            <View style={styles.statsHeader}>
+              <Ionicons name="bar-chart" size={20} color={Colors.primary} />
+              <Text style={styles.statsTitle}>Your Progress So Far</Text>
+            </View>
+            <Text style={styles.statsSubtitle}>Don't lose access to your data!</Text>
+
+            <View style={styles.statsGrid}>
+              {personalBests?.lifetimeTotal && personalBests.lifetimeTotal > 0 && (
+                <View style={styles.statBox}>
+                  <Text style={styles.statBoxValue}>{formatCurrency(personalBests.lifetimeTotal)}</Text>
+                  <Text style={styles.statBoxLabel}>Total Earned</Text>
+                </View>
+              )}
+              {streak?.total_tips_logged && streak.total_tips_logged > 0 && (
+                <View style={styles.statBox}>
+                  <Text style={styles.statBoxValue}>{streak.total_tips_logged}</Text>
+                  <Text style={styles.statBoxLabel}>Tips Logged</Text>
+                </View>
+              )}
+              {streak?.current_streak && streak.current_streak > 0 && (
+                <View style={styles.statBox}>
+                  <Text style={styles.statBoxValue}>{streak.current_streak} 🔥</Text>
+                  <Text style={styles.statBoxLabel}>Day Streak</Text>
+                </View>
+              )}
+              {personalBests?.bestDay && (
+                <View style={styles.statBox}>
+                  <Text style={styles.statBoxValue}>{formatCurrency(personalBests.bestDay.amount)}</Text>
+                  <Text style={styles.statBoxLabel}>Best Day</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.statsWarning}>
+              <Ionicons name="alert-circle" size={16} color={Colors.warning} />
+              <Text style={styles.statsWarningText}>
+                Free accounts are limited to 30 days of history
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Features */}
         <Text style={styles.sectionTitle}>What You Get</Text>
@@ -385,6 +446,69 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
+  },
+
+  // User Stats Card
+  statsCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  statsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  statsSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  statBox: {
+    flex: 1,
+    minWidth: (SCREEN_WIDTH - 76) / 2,
+    backgroundColor: Colors.backgroundTertiary,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  statBoxValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  statBoxLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  statsWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.warning + '15',
+    borderRadius: 10,
+    padding: 12,
+  },
+  statsWarningText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.warning,
+    fontWeight: '500',
   },
 
   // Premium Hero (already subscribed)

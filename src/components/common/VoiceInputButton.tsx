@@ -100,7 +100,7 @@ export default function VoiceInputButton({
     onListeningChange?.(false);
   });
 
-  useSpeechRecognitionEvent('result', (event) => {
+  useSpeechRecognitionEvent('result', (event: { results: Array<{ transcript: string }>; isFinal: boolean }) => {
     const text = event.results[0]?.transcript || '';
     setTranscript(text);
 
@@ -112,7 +112,7 @@ export default function VoiceInputButton({
     }
   });
 
-  useSpeechRecognitionEvent('error', (event) => {
+  useSpeechRecognitionEvent('error', (event: { error: string; message: string }) => {
     console.error('[VoiceInput] Error:', event.error, event.message);
     errorHaptic();
     setIsListening(false);

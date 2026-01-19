@@ -58,6 +58,7 @@ export default function CreatePoolScreen() {
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadParticipants();
@@ -67,6 +68,8 @@ export default function CreatePoolScreen() {
     try {
       const user = await getCurrentUser();
       if (!user) return;
+
+      setCurrentUserId(user.id);
 
       // Get team members
       const members = await getWorkplaceMembers(team.id);
@@ -101,9 +104,8 @@ export default function CreatePoolScreen() {
   };
 
   const toggleParticipant = (userId: string) => {
-    const user = getCurrentUser();
     // Don't allow unchecking current user
-    if (userId === user?.id) return;
+    if (userId === currentUserId) return;
 
     lightHaptic();
     setParticipants(prev =>

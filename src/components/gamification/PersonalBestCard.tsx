@@ -159,6 +159,19 @@ export default function PersonalBestCard({ onPress }: PersonalBestCardProps) {
                 {formatCurrency(bestWeek.amount)}
               </Text>
             </View>
+
+            {/* Beat Record CTA - Show when close but not yet beaten */}
+            {!isNewRecord && bestWeek.amountToBeat > 0 && (
+              <View style={[styles.beatRecordCta, isClose && styles.beatRecordCtaUrgent]}>
+                <Text style={styles.beatRecordText}>
+                  {isClose ? '🔥 ' : ''}
+                  <Text style={styles.beatRecordAmount}>
+                    {formatCurrency(bestWeek.amountToBeat)}
+                  </Text>
+                  {' '}more to beat your record!
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Stats Row */}
@@ -303,6 +316,28 @@ const styles = StyleSheet.create({
   },
   amountGold: {
     color: Colors.white,
+  },
+  beatRecordCta: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  beatRecordCtaUrgent: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  beatRecordText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  beatRecordAmount: {
+    fontWeight: '700',
+    color: Colors.gold,
   },
   statsRow: {
     flexDirection: 'row',

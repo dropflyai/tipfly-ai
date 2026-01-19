@@ -35,7 +35,7 @@ import { openAddTipModal } from '../../navigation/MainTabNavigator';
 import LockedInsightTeaser from '../../components/subscription/LockedInsightTeaser';
 import TaxSeasonBanner from '../../components/subscription/TaxSeasonBanner';
 import SmartUpgradeTrigger from '../../components/subscription/SmartUpgradeTrigger';
-import { PersonalBestCard, WeeklyPercentileCard } from '../../components/gamification';
+import { PersonalBestCard, WeeklyPercentileCard, StreakWarning } from '../../components/gamification';
 
 export default function DashboardScreenV2() {
   const navigation = useNavigation();
@@ -259,6 +259,9 @@ export default function DashboardScreenV2() {
         >
           <EmailVerificationBanner />
           <PendingPoolsAlert />
+
+          {/* Streak Warning - Shows when streak at risk */}
+          <StreakWarning onLogTip={handleAddTips} />
 
           {/* Tax Season Banner - Shows Jan-Apr for free users */}
           {!isPremium && showTaxBanner && (

@@ -88,13 +88,13 @@ const compressImage = async (uri: string): Promise<string> => {
     const fileInfo = await FileSystem.getInfoAsync(uri);
 
     // If file is already small enough, return as is
-    if (fileInfo.exists && fileInfo.size && fileInfo.size <= MAX_IMAGE_SIZE) {
+    if (fileInfo.exists && 'size' in fileInfo && fileInfo.size && fileInfo.size <= MAX_IMAGE_SIZE) {
       return uri;
     }
 
     // For larger files, we'd use image manipulation
     // For now, just return the uri (expo-image-picker already compresses)
-    console.log('[Receipt] Image size:', fileInfo.size);
+    console.log('[Receipt] Image size:', fileInfo.exists && 'size' in fileInfo ? fileInfo.size : 'unknown');
     return uri;
   } catch (error) {
     console.error('[Receipt] Error checking file size:', error);
@@ -122,7 +122,7 @@ export const uploadReceipt = async (
 
     // Read file as base64
     const base64 = await FileSystem.readAsStringAsync(compressedUri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64',
     });
 
     // Convert to array buffer
