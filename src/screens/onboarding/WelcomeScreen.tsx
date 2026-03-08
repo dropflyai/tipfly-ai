@@ -72,7 +72,7 @@ export default function WelcomeScreen({ onNext }: WelcomeScreenProps) {
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
-              <Ionicons name="target" size={24} color={Colors.white} />
+              <Ionicons name="flag" size={24} color={Colors.white} />
             </View>
             <Text style={styles.featureText}>Set & achieve income goals</Text>
           </View>
