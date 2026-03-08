@@ -35,7 +35,7 @@ import JobSelector from '../../components/common/JobSelector';
 import VoiceInputButton from '../../components/common/VoiceInputButton';
 import ImportEarningsScreen from '../import/ImportEarningsScreen';
 import ScanReceiptScreen from '../import/ScanReceiptScreen';
-import { MilestoneCelebration, MilestoneType, RandomDelight, shouldShowDelight, getRandomDelightType } from '../../components/gamification';
+import { MilestoneCelebration, MilestoneType } from '../../components/gamification';
 
 interface AddTipScreenV2Props {
   onClose?: () => void;
@@ -45,7 +45,7 @@ type EntryMode = 'quick' | 'ai';
 
 export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const navigation = useNavigation();
-  const { success, error: showError, confirm } = useAlert();
+  const { success, error: showError, confirm, showToast } = useAlert();
   const isPremium = useUserStore((state) => state.isPremium());
 
   const [entryMode, setEntryMode] = useState<EntryMode>('quick');
@@ -78,9 +78,6 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const [showMilestone, setShowMilestone] = useState(false);
   const [currentMilestone, setCurrentMilestone] = useState<MilestoneType | null>(null);
 
-  // Random delight state
-  const [showDelight, setShowDelight] = useState(false);
-  const [delightType, setDelightType] = useState<'confetti' | 'sparkle' | 'emoji_burst'>('confetti');
 
   // Tip count tracking
   const incrementTipCount = useAnimationStore((state) => state.incrementTipCount);
@@ -358,33 +355,20 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
         setShowMilestone(true);
         // Don't show regular success or navigate - milestone modal handles it
       } else {
-        // Check for random delight (8% chance)
-        const willShowDelight = shouldShowDelight();
-        if (willShowDelight) {
-          setDelightType(getRandomDelightType());
-          setShowDelight(true);
-          // Delay success message until after delight
-          setTimeout(() => {
-            success(
-              'Tip Logged!',
-              `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`
-            );
-          }, 500);
+        const successMsg = `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`;
+
+        // Close the AddTip modal FIRST to avoid iOS frozen-modal bug
+        // (showing a Modal-based alert while inside a Modal causes touch-blocking on iOS)
+        if (onClose) {
+          onClose();
         } else {
-          success(
-            'Tip Logged!',
-            `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`
-          );
+          navigation.navigate('Home' as never);
         }
 
-        // Close after showing success
+        // Show success toast AFTER modal closes (toast doesn't use a Modal, so no conflict)
         setTimeout(() => {
-          if (onClose) {
-            onClose();
-          } else {
-            navigation.navigate('Home' as never);
-          }
-        }, willShowDelight ? 2500 : 1500);
+          showToast({ type: 'success', message: `Tip Logged! ${successMsg}` });
+        }, 300);
       }
     } catch (err: any) {
       errorHaptic();
@@ -923,12 +907,6 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
         />
       )}
 
-      {/* Random Delight Overlay */}
-      <RandomDelight
-        visible={showDelight}
-        type={delightType}
-        onComplete={() => setShowDelight(false)}
-      />
     </SafeAreaView>
   );
 }

@@ -1,19 +1,10 @@
 // Claude AI Service for TipFly AI
-import Anthropic from '@anthropic-ai/sdk';
+// Uses direct fetch() instead of @anthropic-ai/sdk (which is Node.js-only and crashes React Native)
 
-// For now, we'll use a mock mode until API key is added
-const USE_MOCK_MODE = !process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-
-const anthropic = USE_MOCK_MODE
-  ? null
-  : new Anthropic({
-      apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
-    });
-
-interface ClaudeMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
+const USE_MOCK_MODE = !ANTHROPIC_API_KEY;
+const API_URL = 'https://api.anthropic.com/v1/messages';
+const API_TIMEOUT_MS = 15000;
 
 /**
  * Call Claude API with a prompt
@@ -29,28 +20,46 @@ export async function callClaude(
   }
 
   try {
-    const message = await anthropic!.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      system: systemPrompt || 'You are a helpful AI assistant for tip tracking.',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 1024,
+        system: systemPrompt || 'You are a helpful AI assistant for tip tracking.',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+      signal: controller.signal,
     });
 
-    const content = message.content[0];
-    if (content.type === 'text') {
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0];
+
+    if (content?.type === 'text') {
       return content.text;
     }
 
-    throw new Error('Unexpected response type from Claude');
+    throw new Error('Unexpected response format');
   } catch (error) {
-    // Silently fall back to mock response
-    // API errors are expected when key is invalid or model unavailable
-    // The fallback ensures app continues working seamlessly
+    console.warn('[Claude] API call failed, using fallback:', error);
     return getMockResponse(prompt);
   }
 }

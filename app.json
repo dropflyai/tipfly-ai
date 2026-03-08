@@ -2,7 +2,7 @@
   "expo": {
     "name": "TipFly AI",
     "slug": "tipflyai-app",
-    "version": "1.0.4",
+    "version": "1.0.6",
     "scheme": "tipflyai",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tipflyai.app",
-      "buildNumber": "18",
+      "buildNumber": "25",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan receipts for automatic tip entry.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and upload receipt images.",

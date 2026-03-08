@@ -1,14 +1,11 @@
 // Claude Vision Service for analyzing screenshots and receipts
-import Anthropic from '@anthropic-ai/sdk';
+// Uses direct fetch() instead of @anthropic-ai/sdk (Node.js-only, crashes React Native)
 import * as FileSystem from 'expo-file-system';
 
-const USE_MOCK_MODE = !process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-
-const anthropic = USE_MOCK_MODE
-  ? null
-  : new Anthropic({
-      apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
-    });
+const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
+const USE_MOCK_MODE = !ANTHROPIC_API_KEY;
+const API_URL = 'https://api.anthropic.com/v1/messages';
+const API_TIMEOUT_MS = 30000; // Vision requests can be slower
 
 // Supported delivery/rideshare apps
 export type DeliveryApp =
@@ -150,33 +147,52 @@ Set needsReview=true if:
 - Multiple time periods shown (unclear which to use)
 - Can't determine if tips are included in total`;
 
-    const response = await anthropic!.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: base64Image,
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mediaType,
+                  data: base64Image,
+                },
               },
-            },
-            {
-              type: 'text',
-              text: 'Analyze this delivery/rideshare app screenshot and extract the earnings information. Return only JSON.',
-            },
-          ],
-        },
-      ],
-      system: systemPrompt,
+              {
+                type: 'text',
+                text: 'Analyze this delivery/rideshare app screenshot and extract the earnings information. Return only JSON.',
+              },
+            ],
+          },
+        ],
+      }),
+      signal: controller.signal,
     });
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0];
+    if (content?.type !== 'text') {
       throw new Error('Unexpected response type');
     }
 
@@ -237,33 +253,52 @@ Guidelines:
 - If signed receipt with tip filled in, use that tip amount
 - Set needsReview=true if handwriting is hard to read or values are unclear`;
 
-    const response = await anthropic!.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: base64Image,
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mediaType,
+                  data: base64Image,
+                },
               },
-            },
-            {
-              type: 'text',
-              text: 'Analyze this receipt image and extract the tip and payment information. Return only JSON.',
-            },
-          ],
-        },
-      ],
-      system: systemPrompt,
+              {
+                type: 'text',
+                text: 'Analyze this receipt image and extract the tip and payment information. Return only JSON.',
+              },
+            ],
+          },
+        ],
+      }),
+      signal: controller.signal,
     });
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0];
+    if (content?.type !== 'text') {
       throw new Error('Unexpected response type');
     }
 
