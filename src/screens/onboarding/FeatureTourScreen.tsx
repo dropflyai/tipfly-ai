@@ -57,14 +57,14 @@ const TOUR_SLIDES: TourSlide[] = [
   },
   {
     id: '3',
-    icon: 'document-text-outline',
-    iconColor: '#3B82F6',
-    title: 'Tax Season? Already Done',
-    subtitle: 'Your records are always ready',
+    icon: 'shield-checkmark',
+    iconColor: '#10B981',
+    title: 'Claim Your $25K Deduction',
+    subtitle: 'No Tax on Tips is now law',
     features: [
-      'Year-to-date totals instantly',
-      'Export for tax filing',
-      'No more April scrambling',
+      'Track tips toward your $25,000 deduction',
+      'IRS-ready records built automatically',
+      'See your estimated tax savings live',
     ],
   },
 ];

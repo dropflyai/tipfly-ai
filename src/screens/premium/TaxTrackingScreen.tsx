@@ -233,16 +233,16 @@ export default function TaxTrackingScreen() {
   if (!isPremium) {
     return (
       <View style={styles.upgradeContainer}>
-        <Ionicons name="lock-closed" size={64} color={Colors.primary} />
-        <Text style={styles.upgradeTitle}>Premium Feature</Text>
+        <Ionicons name="shield-checkmark" size={64} color={Colors.success} />
+        <Text style={styles.upgradeTitle}>No Tax on Tips Deduction</Text>
         <Text style={styles.upgradeText}>
-          Tax Tracking is a premium feature. Track deductions, calculate quarterly estimates, and stay tax-ready year-round.
+          Track your qualified tips to claim up to $25,000 in federal income tax deductions. Export IRS-ready reports with your daily tip log.
         </Text>
         <TouchableOpacity
           style={styles.upgradeButton}
           onPress={() => navigation.navigate('Upgrade' as never)}
         >
-          <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+          <Text style={styles.upgradeButtonText}>Unlock Tax Reports</Text>
         </TouchableOpacity>
       </View>
     );
@@ -371,6 +371,23 @@ export default function TaxTrackingScreen() {
             )}
           </View>
         )}
+
+        {/* W-2 Reconciliation Button */}
+        <TouchableOpacity
+          style={styles.w2Button}
+          onPress={() => navigation.navigate('W2Reconciliation' as never)}
+        >
+          <View style={styles.w2ButtonLeft}>
+            <View style={styles.w2IconContainer}>
+              <Ionicons name="document-text" size={20} color={Colors.primary} />
+            </View>
+            <View>
+              <Text style={styles.w2ButtonTitle}>W-2 Reconciliation</Text>
+              <Text style={styles.w2ButtonSubtitle}>Compare records with your W-2</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.gray400} />
+        </TouchableOpacity>
 
         {/* Year Summary Card */}
         {taxSummary && (
@@ -1494,5 +1511,38 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  w2Button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 168, 232, 0.2)',
+  },
+  w2ButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  w2IconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 168, 232, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  w2ButtonTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  w2ButtonSubtitle: {
+    fontSize: 12,
+    color: Colors.gray400,
+    marginTop: 2,
   },
 });

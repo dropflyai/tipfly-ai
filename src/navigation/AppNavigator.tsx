@@ -29,12 +29,14 @@ import TermsOfServiceScreen from '../screens/legal/TermsOfServiceScreen';
 import PrivacyPolicyScreen from '../screens/legal/PrivacyPolicyScreen';
 import BillSplitScreen from '../screens/premium/BillSplitScreen';
 import TaxTrackingScreen from '../screens/premium/TaxTrackingScreen';
+import W2ReconciliationScreen from '../screens/premium/W2ReconciliationScreen';
 import GoalsScreen from '../screens/premium/GoalsScreen';
 import ExportReportsScreen from '../screens/premium/ExportReportsScreen';
 import IncomeVerificationScreen from '../screens/premium/IncomeVerificationScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
 import TipHistoryScreen from '../screens/history/TipHistoryScreen';
 import JobsScreen from '../screens/jobs/JobsScreen';
+import TeamsScreen from '../screens/teams/TeamsScreen';
 import TeamDetailScreen from '../screens/teams/TeamDetailScreen';
 import CreatePoolScreen from '../screens/pools/CreatePoolScreen';
 import PoolDetailScreen from '../screens/pools/PoolDetailScreen';
@@ -193,7 +195,7 @@ export default function AppNavigator() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (userId: string, retryCount = 0) => {
+  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<void> => {
     try {
       console.log(`[AppNavigator] Fetching user profile for ID: ${userId} (attempt ${retryCount + 1})`);
       const { data, error } = await supabase
@@ -205,13 +207,13 @@ export default function AppNavigator() {
       if (error) {
         console.error('[AppNavigator] Error fetching user profile:', error);
 
-        // Retry up to 3 times with delay (profile might not be created yet by trigger)
-        if (retryCount < 3) {
-          console.log('[AppNavigator] Retrying in 1 second...');
-          setTimeout(() => {
-            fetchUserProfile(userId, retryCount + 1);
-          }, 1000);
-          return;
+        // Retry up to 5 times with increasing delay (profile might not be created yet by trigger)
+        // This is especially important on iPad where network may be slower
+        if (retryCount < 5) {
+          const delayMs = Math.min(1000 * (retryCount + 1), 3000); // 1s, 2s, 3s, 3s, 3s
+          console.log(`[AppNavigator] Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          return fetchUserProfile(userId, retryCount + 1);
         }
 
         throw error;
@@ -345,6 +347,14 @@ export default function AppNavigator() {
               }}
             />
             <Stack.Screen
+              name="W2Reconciliation"
+              component={W2ReconciliationScreen}
+              options={{
+                headerShown: true,
+                title: 'W-2 Reconciliation'
+              }}
+            />
+            <Stack.Screen
               name="Goals"
               component={GoalsScreen}
               options={{
@@ -390,6 +400,14 @@ export default function AppNavigator() {
               options={{
                 headerShown: false,
                 title: 'Jobs'
+              }}
+            />
+            <Stack.Screen
+              name="Teams"
+              component={TeamsScreen}
+              options={{
+                headerShown: false,
+                title: 'Tip Pooling'
               }}
             />
             <Stack.Screen

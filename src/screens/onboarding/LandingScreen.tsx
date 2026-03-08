@@ -196,10 +196,10 @@ export default function LandingScreen({ onSignUp, onLogin }: LandingScreenProps)
             <Text style={styles.valuePropText}>See your real hourly rate</Text>
           </View>
           <View style={styles.valueProp}>
-            <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={14} color={Colors.background} />
+            <View style={[styles.checkCircle, { backgroundColor: Colors.success }]}>
+              <Ionicons name="shield-checkmark" size={12} color={Colors.background} />
             </View>
-            <Text style={styles.valuePropText}>Tax-ready yearly records</Text>
+            <Text style={styles.valuePropText}>Claim your $25K tip deduction</Text>
           </View>
         </View>
 

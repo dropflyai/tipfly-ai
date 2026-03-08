@@ -28,10 +28,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type PricingPlan = 'monthly' | 'annual';
 
 const PREMIUM_FEATURES = [
+  { icon: 'shield-checkmark', title: '$25K Deduction Proof', description: 'IRS-ready tip reports' },
   { icon: 'infinite', title: 'Unlimited History', description: 'Track tips forever' },
   { icon: 'sparkles', title: 'AI Entry', description: 'Voice & conversational input' },
   { icon: 'calculator', title: 'Bill Split', description: 'Split bills & calculate pools' },
-  { icon: 'document-text', title: 'Tax Reports', description: 'Quarterly estimates & exports' },
   { icon: 'trophy', title: 'Goals', description: 'Set & track savings goals' },
   { icon: 'download', title: 'Export', description: 'CSV/PDF for tax filing' },
 ] as const;
@@ -338,7 +338,7 @@ export default function UpgradeScreenV2() {
             ))}
           </View>
           <Text style={styles.testimonialText}>
-            "I saved $400 on taxes last year. Worth every penny!"
+            "I claimed the full $25K deduction because I had every tip logged. TipFly paid for itself 1,000x over."
           </Text>
           <Text style={styles.testimonialAuthor}>— Sarah, Server in Chicago</Text>
         </View>

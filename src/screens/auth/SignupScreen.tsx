@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -129,6 +130,11 @@ export default function SignupScreen({ navigation }: Props) {
     navigation.goBack();
   };
 
+  // Get screen dimensions for iPad layout constraints
+  const { width: screenWidth } = useWindowDimensions();
+  const isTablet = screenWidth >= 768;
+  const maxContentWidth = isTablet ? 500 : screenWidth;
+
   return (
     <LinearGradient
       colors={['#0A0F1A', '#1A2332', '#0A0F1A']}
@@ -138,29 +144,35 @@ export default function SignupScreen({ navigation }: Props) {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isTablet && { alignItems: 'center' }
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back Button */}
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.7)" />
-          </TouchableOpacity>
+          {/* Content wrapper with max width for tablets */}
+          <View style={[styles.contentWrapper, { maxWidth: maxContentWidth, width: '100%' }]}>
+            {/* Back Button */}
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.7)" />
+            </TouchableOpacity>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="person-add-outline" size={40} color={Colors.primary} />
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="person-add-outline" size={40} color={Colors.primary} />
+              </View>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Start tracking your tips today</Text>
             </View>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Start tracking your tips today</Text>
-          </View>
 
-          {/* Form */}
-          <View style={styles.form}>
+            {/* Form */}
+            <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full Name</Text>
               <View style={[
@@ -264,6 +276,7 @@ export default function SignupScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -283,6 +296,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingTop: 60,
+  },
+  contentWrapper: {
+    // Container for tablet layout constraints
   },
   backButton: {
     width: 44,

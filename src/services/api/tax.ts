@@ -2,7 +2,7 @@
 import { supabase } from './supabase';
 import { Deduction } from '../../types';
 
-// Tax-free tips threshold under the "No Tax on Tips Act" (proposed 2025)
+// Tax-free tips threshold under the "No Tax on Tips Act" (signed into law July 4, 2025, effective 2025-2028)
 // First $25,000 in tips would be exempt from federal income tax
 export const TAX_FREE_TIP_THRESHOLD = 25000;
 

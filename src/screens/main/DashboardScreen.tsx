@@ -26,6 +26,7 @@ import EmailVerificationBanner from '../../components/EmailVerificationBanner';
 import WeekSparkline from '../../components/charts/WeekSparkline';
 import CollapsibleSection from '../../components/common/CollapsibleSection';
 import PendingPoolsAlert from '../../components/cards/PendingPoolsAlert';
+import TipPoolCard from '../../components/cards/TipPoolCard';
 import { StreakDisplay } from '../../components/StreakDisplay';
 import { SyncStatusBadge } from '../../components/SyncStatusBadge';
 import { generateShiftPrediction, ShiftPrediction } from '../../services/ai/predictions';
@@ -36,6 +37,8 @@ import { openAddTipModal } from '../../navigation/MainTabNavigator';
 import LockedInsightTeaser from '../../components/subscription/LockedInsightTeaser';
 import TaxSeasonBanner from '../../components/subscription/TaxSeasonBanner';
 import SmartUpgradeTrigger from '../../components/subscription/SmartUpgradeTrigger';
+import DeductionTrackerCard from '../../components/cards/DeductionTrackerCard';
+import { getTaxSummary, TaxSummary } from '../../services/api/tax';
 import { PersonalBestCard, WeeklyPercentileCard, StreakWarning } from '../../components/gamification';
 
 export default function DashboardScreenV2() {
@@ -54,6 +57,7 @@ export default function DashboardScreenV2() {
   const [upgradeTriggerType, setUpgradeTriggerType] = useState<'tip_milestone' | 'weekly_summary'>('tip_milestone');
   const [totalTipsLogged, setTotalTipsLogged] = useState(0);
   const [showTaxBanner, setShowTaxBanner] = useState(false);
+  const [taxYearData, setTaxYearData] = useState<TaxSummary | null>(null);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
   const pulseAnim = useState(new Animated.Value(1))[0];
@@ -149,7 +153,7 @@ export default function DashboardScreenV2() {
       const lastWeekEnd = new Date();
       lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
 
-      const [todayEntries, yesterdayEntries, weekEntries, monthEntries, lastWeekEntries, goals, entries] = await Promise.all([
+      const [todayEntries, yesterdayEntries, weekEntries, monthEntries, lastWeekEntries, goals, entries, taxSummary] = await Promise.all([
         getTodaysTips(),
         getTipEntriesByDateRange(getYesterdayISO(), getYesterdayISO()),
         getWeeklyTips(),
@@ -160,6 +164,7 @@ export default function DashboardScreenV2() {
         ),
         isPremium ? getActiveGoals() : Promise.resolve([]),
         getTipEntries(3), // Only 3 for compact view
+        getTaxSummary(new Date().getFullYear()).catch(() => null),
       ]);
 
       const calculatedStats = calculateDashboardStats(
@@ -192,6 +197,7 @@ export default function DashboardScreenV2() {
       setActiveGoals(goals);
       setRecentEntries(entries);
       setWeeklyChartData(chartData);
+      if (taxSummary) setTaxYearData(taxSummary.yearTotal);
 
       // Track total tips for milestone triggers (for free users)
       if (!isPremium) {
@@ -297,6 +303,7 @@ export default function DashboardScreenV2() {
         >
           <EmailVerificationBanner />
           <PendingPoolsAlert />
+          <TipPoolCard />
 
           {/* Streak Warning - Shows when streak at risk */}
           <StreakWarning onLogTip={handleAddTips} />
@@ -402,6 +409,17 @@ export default function DashboardScreenV2() {
               </View>
             )}
           </View>
+
+          {/* DEDUCTION TRACKER - $25K No Tax on Tips */}
+          {taxYearData && (
+            <DeductionTrackerCard
+              netTipEarnings={taxYearData.netTipEarnings}
+              taxFreeTips={taxYearData.taxFreeTips}
+              thresholdProgress={taxYearData.thresholdProgress}
+              isOverThreshold={taxYearData.isOverThreshold}
+              isPremium={isPremium}
+            />
+          )}
 
           {/* QUICK STATS ROW - Tertiary */}
           <View style={styles.quickStatsRow}>

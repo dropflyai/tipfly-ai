@@ -20,7 +20,8 @@ type TriggerType =
   | 'tip_milestone'     // After logging 10+ tips
   | 'goal_achieved'     // When a goal is completed
   | 'weekly_summary'    // End of week summary
-  | 'first_month';      // After first month of tracking
+  | 'first_month'       // After first month of tracking
+  | 'deduction_milestone'; // When hitting $5K/$10K toward $25K deduction
 
 interface SmartUpgradeTriggerProps {
   visible: boolean;
@@ -34,6 +35,7 @@ interface SmartUpgradeTriggerProps {
     goalAmount?: number;
     tipCount?: number;
     savingsEstimate?: number;
+    deductionAmount?: number;
   };
 }
 
@@ -104,6 +106,16 @@ const triggerContent: Record<TriggerType, {
       : 'You\'ve been tracking for a month! Unlock advanced features to maximize your earnings.',
     cta: 'Go Premium',
     benefit: '7-day free trial included',
+  },
+  deduction_milestone: {
+    icon: 'shield-checkmark',
+    iconColor: Colors.success,
+    title: 'Deduction Growing!',
+    getMessage: (ctx) => ctx?.deductionAmount
+      ? `You've tracked ${formatCurrency(ctx.deductionAmount)} toward your $25K deduction! Export IRS-ready proof with Premium.`
+      : 'Your tip records are building toward the $25K federal deduction. Export proof with Premium.',
+    cta: 'Unlock Tax Reports',
+    benefit: 'IRS-ready export + W-2 reconciliation',
   },
 };
 

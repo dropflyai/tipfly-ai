@@ -34,8 +34,8 @@ export default function TaxSeasonBanner({
   const month = now.getMonth(); // 0-11
   const isTaxSeason = month >= 0 && month <= 3;
 
-  // Calculate estimated savings (roughly 15-25% of tips can be deductions)
-  const calculatedSavings = estimatedSavings || Math.round(totalTips * 0.18);
+  // Calculate estimated savings (~22% marginal federal rate on deducted tips)
+  const calculatedSavings = estimatedSavings || Math.round(totalTips * 0.22);
 
   useEffect(() => {
     if (!isTaxSeason) return;
@@ -101,25 +101,25 @@ export default function TaxSeasonBanner({
           {/* Content */}
           <View style={styles.content}>
             <View style={styles.iconContainer}>
-              <Ionicons name="receipt" size={24} color={Colors.success} />
+              <Ionicons name="shield-checkmark" size={24} color={Colors.success} />
             </View>
 
             <View style={styles.textContent}>
               <View style={styles.titleRow}>
-                <Text style={styles.title}>Tax Season is Here</Text>
+                <Text style={styles.title}>No Tax on Tips - Claim It</Text>
                 <View style={styles.urgencyBadge}>
                   <Ionicons name="time" size={12} color={Colors.white} />
                   <Text style={styles.urgencyText}>{daysUntilDeadline} days left</Text>
                 </View>
               </View>
 
-              {calculatedSavings > 0 ? (
+              {totalTips > 0 ? (
                 <Text style={styles.subtitle}>
-                  Get your {formatCurrency(calculatedSavings)} in potential deductions
+                  You've tracked {formatCurrency(totalTips)} in tips. That could save you up to {formatCurrency(calculatedSavings)} on your federal return.
                 </Text>
               ) : (
                 <Text style={styles.subtitle}>
-                  Track deductions & export reports for easy filing
+                  Track your tips to claim up to $25,000 in federal tax deductions.
                 </Text>
               )}
             </View>
@@ -130,7 +130,7 @@ export default function TaxSeasonBanner({
           {/* Bottom highlight */}
           <View style={styles.highlight}>
             <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
-            <Text style={styles.highlightText}>Free for Premium members</Text>
+            <Text style={styles.highlightText}>Your tip records = your proof for the IRS</Text>
           </View>
         </LinearGradient>
       </TouchableOpacity>

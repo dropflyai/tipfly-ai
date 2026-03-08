@@ -9,7 +9,7 @@ export interface BadgeDefinition {
   name: string;
   icon: string;
   description: string;
-  category: 'milestone' | 'streak' | 'earnings' | 'goals';
+  category: 'milestone' | 'streak' | 'earnings' | 'goals' | 'deduction';
 }
 
 export const BADGE_DEFINITIONS: Record<string, BadgeDefinition> = {
@@ -96,6 +96,36 @@ export const BADGE_DEFINITIONS: Record<string, BadgeDefinition> = {
     icon: '📋',
     description: 'Tracked all quarterly taxes',
     category: 'goals',
+  },
+
+  // Deduction badges ($25K No Tax on Tips)
+  deduction_1k: {
+    id: 'deduction_1k',
+    name: 'Deduction Started',
+    icon: '🛡️',
+    description: '$1,000 toward your $25K deduction',
+    category: 'deduction',
+  },
+  deduction_5k: {
+    id: 'deduction_5k',
+    name: 'Deduction Builder',
+    icon: '🧱',
+    description: '$5,000 toward your $25K deduction',
+    category: 'deduction',
+  },
+  deduction_10k: {
+    id: 'deduction_10k',
+    name: 'Halfway There',
+    icon: '⭐',
+    description: '$10,000 toward your $25K deduction',
+    category: 'deduction',
+  },
+  deduction_25k: {
+    id: 'deduction_25k',
+    name: 'Max Deduction',
+    icon: '👑',
+    description: 'Claimed the full $25,000 deduction',
+    category: 'deduction',
   },
 };
 

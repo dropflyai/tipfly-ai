@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Shadows } from '../constants/colors';
 import { BlurView } from 'expo-blur';
 import { mediumHaptic } from '../utils/haptics';
-import { usePendingPoolsStore } from '../store/pendingPoolsStore';
 import { useUserStore } from '../store/userStore';
 import AppTour, { TourStep } from '../components/AppTour';
 
@@ -14,7 +13,7 @@ import AppTour, { TourStep } from '../components/AppTour';
 type TabParamList = {
   Home: undefined;
   Analytics: undefined;
-  Teams: undefined;
+  Advisor: undefined;
   Profile: undefined;
 };
 
@@ -23,7 +22,7 @@ import DashboardScreen from '../screens/main/DashboardScreen';
 import AddTipScreen from '../screens/main/AddTipScreen';
 import StatsScreen from '../screens/main/StatsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
-import TeamsScreen, { triggerCreateTeamModal } from '../screens/teams/TeamsScreen';
+import AdvisorScreen from '../screens/advisor/AdvisorScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,13 +120,13 @@ const tourSteps: TourStep[] = [
     navigateToTab: 'Analytics',
   },
   {
-    id: 'teams-tab',
+    id: 'advisor-tab',
     type: 'tap_element',
-    title: 'Team Tip Pools',
-    description: 'Tap the Teams tab to manage tip pools with coworkers.',
-    icon: 'people',
+    title: 'Your AI Advisor',
+    description: 'Ask questions about the app, your earnings, tax deductions, or tip pooling!',
+    icon: 'sparkles',
     spotlightPosition: {
-      // Teams is 3rd tab (index 2), center it on the tab icon
+      // Advisor is 3rd tab (index 2), center it on the tab icon
       x: TAB_WIDTH * 2 + (TAB_WIDTH / 2) - 28,
       y: SCREEN_HEIGHT - TAB_BAR_HEIGHT - 20,
       width: 56,
@@ -135,23 +134,7 @@ const tourSteps: TourStep[] = [
     },
     tooltipPosition: 'top',
     navigateToTab: 'Analytics',
-    action: 'navigate_teams',
-  },
-  {
-    id: 'teams-create',
-    type: 'tap_element',
-    title: 'Create Your First Team',
-    description: 'Tap the + button to create a team. You\'ll name it and invite coworkers!',
-    icon: 'add-circle',
-    spotlightPosition: {
-      x: SCREEN_WIDTH - 56,
-      y: 48,
-      width: 40,
-      height: 40,
-    },
-    tooltipPosition: 'bottom',
-    navigateToTab: 'Teams',
-    action: 'navigate_create_team',
+    action: 'navigate_advisor',
   },
   {
     id: 'profile-tab',
@@ -167,7 +150,7 @@ const tourSteps: TourStep[] = [
       height: 56,
     },
     tooltipPosition: 'top',
-    navigateToTab: 'Teams',
+    navigateToTab: 'Advisor',
     action: 'navigate_profile',
   },
   {
@@ -216,8 +199,6 @@ function DashboardScreenWrapper(props: any) {
 }
 
 export default function MainTabNavigator() {
-  const pendingCount = usePendingPoolsStore((state) => state.pendingCount);
-  const fetchPendingPools = usePendingPoolsStore((state) => state.fetchPendingPools);
   const hasCompletedTour = useUserStore((state) => state.hasCompletedTour);
   const completeTour = useUserStore((state) => state.completeTour);
 
@@ -233,11 +214,6 @@ export default function MainTabNavigator() {
     return () => {
       globalOpenAddTip = null;
     };
-  }, []);
-
-  // Fetch pending pools on mount
-  useEffect(() => {
-    fetchPendingPools();
   }, []);
 
   // Show tour for users who haven't seen it yet
@@ -288,23 +264,15 @@ export default function MainTabNavigator() {
           globalTabNavigate('Analytics');
         }
         break;
-      case 'navigate_teams':
+      case 'navigate_advisor':
         if (globalTabNavigate) {
-          globalTabNavigate('Teams');
+          globalTabNavigate('Advisor');
         }
         break;
       case 'navigate_profile':
         if (globalTabNavigate) {
           globalTabNavigate('Profile');
         }
-        break;
-      case 'navigate_create_team':
-        // Open the create team modal
-        mediumHaptic();
-        // Small delay to let the Teams screen fully render
-        setTimeout(() => {
-          triggerCreateTeamModal();
-        }, 300);
         break;
     }
   }, []);
@@ -375,15 +343,13 @@ export default function MainTabNavigator() {
           }}
         />
         <Tab.Screen
-          name="Teams"
-          component={TeamsScreen}
+          name="Advisor"
+          component={AdvisorScreen}
           options={{
-            title: 'Teams',
-            tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
-            tabBarBadgeStyle: pendingCount > 0 ? styles.badge : undefined,
+            title: 'Advisor',
             tabBarIcon: ({ color, size, focused }) => (
               <View style={focused ? styles.activeIconContainer : undefined}>
-                <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
+                <Ionicons name="sparkles" size={size} color={color} />
               </View>
             ),
           }}
@@ -453,12 +419,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     ...Shadows.glowBlueSubtle,
-  },
-  badge: {
-    backgroundColor: Colors.error,
-    fontSize: 11,
-    fontWeight: '700',
-    minWidth: 18,
-    height: 18,
   },
 });

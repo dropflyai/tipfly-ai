@@ -82,7 +82,7 @@ export async function scheduleWeeklySummary(): Promise<string | null> {
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Weekly Earnings Summary',
-        body: 'Tap to see how much you earned this week!',
+        body: 'See how much you earned and how it builds toward your $25K deduction.',
         data: { type: 'weekly-summary' },
         sound: true,
       },
@@ -111,7 +111,7 @@ export async function scheduleStreakReminder(): Promise<string | null> {
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Keep Your Streak Going!',
-        body: "Don't forget to log today's tips",
+        body: "Log today's tips to keep building your deduction records.",
         data: { type: 'streak-reminder' },
         sound: true,
       },
@@ -155,7 +155,7 @@ export async function scheduleTaxReminders(): Promise<void> {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${date.quarter} Tax Deadline Approaching`,
-          body: 'Quarterly taxes are due in 5 days. Check your estimated amount.',
+          body: 'Quarterly taxes are due in 5 days. Make sure your tip records are up to date for your $25K deduction.',
           data: { type: 'tax-reminder', quarter: date.quarter },
           sound: true,
         },

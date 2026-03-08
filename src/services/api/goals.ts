@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 export interface Goal {
   id: string;
   user_id: string;
-  goal_type: 'daily' | 'weekly' | 'monthly';
+  goal_type: 'daily' | 'weekly' | 'monthly' | 'yearly';
   target_amount: number;
   current_amount: number;
   start_date: string;
@@ -72,7 +72,7 @@ export const getActiveGoals = async (): Promise<Goal[]> => {
  * Create a new goal
  */
 export const createGoal = async (goal: {
-  goal_type: 'daily' | 'weekly' | 'monthly';
+  goal_type: 'daily' | 'weekly' | 'monthly' | 'yearly';
   target_amount: number;
 }): Promise<Goal> => {
   try {
@@ -95,6 +95,11 @@ export const createGoal = async (goal: {
         break;
       case 'monthly':
         endDate.setMonth(endDate.getMonth() + 1);
+        break;
+      case 'yearly':
+        // Yearly goals run Jan 1 - Dec 31 of current year
+        startDate.setMonth(0, 1);
+        endDate = new Date(startDate.getFullYear(), 11, 31, 23, 59, 59);
         break;
     }
 
@@ -276,6 +281,8 @@ export const getGoalPeriodLabel = (goal: Goal): string => {
         month: 'long',
         year: 'numeric'
       });
+    case 'yearly':
+      return `${startDate.getFullYear()} Deduction`;
     default:
       return '';
   }

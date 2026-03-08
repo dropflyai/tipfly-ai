@@ -88,7 +88,7 @@ export type TipEntry = {
 export type Goal = {
   id: string;
   user_id: string;
-  goal_type: 'daily' | 'weekly' | 'monthly';
+  goal_type: 'daily' | 'weekly' | 'monthly' | 'yearly';
   target_amount: number;
   current_amount: number;
   start_date: string;

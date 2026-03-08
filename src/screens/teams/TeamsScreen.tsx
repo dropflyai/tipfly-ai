@@ -238,7 +238,12 @@ export default function TeamsScreenV2() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Teams</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Tip Pooling</Text>
+        </View>
         <TouchableOpacity
           style={styles.createButton}
           onPress={handleCreateTeam}

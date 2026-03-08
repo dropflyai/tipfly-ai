@@ -32,7 +32,7 @@ export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedGoalType, setSelectedGoalType] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [selectedGoalType, setSelectedGoalType] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('weekly');
   const [targetAmount, setTargetAmount] = useState('');
   const [creating, setCreating] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -333,6 +333,32 @@ export default function GoalsScreen() {
                     ]}
                   >
                     Monthly
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.goalTypeButton,
+                    selectedGoalType === 'yearly' && styles.goalTypeButtonActive,
+                    selectedGoalType === 'yearly' && { backgroundColor: Colors.success },
+                  ]}
+                  onPress={() => {
+                    setSelectedGoalType('yearly');
+                    setTargetAmount('25000');
+                  }}
+                >
+                  <Ionicons
+                    name="shield-checkmark"
+                    size={24}
+                    color={selectedGoalType === 'yearly' ? Colors.white : Colors.success}
+                  />
+                  <Text
+                    style={[
+                      styles.goalTypeLabel,
+                      selectedGoalType === 'yearly' && styles.goalTypeLabelActive,
+                    ]}
+                  >
+                    $25K
                   </Text>
                 </TouchableOpacity>
               </View>

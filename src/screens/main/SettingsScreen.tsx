@@ -21,7 +21,7 @@ import { formatCurrency } from '../../utils/formatting';
 
 export default function SettingsScreenV2() {
   const navigation = useNavigation();
-  const { user, isPremium, clearUser } = useUserStore();
+  const { user, isPremium, clearUser, resetTour } = useUserStore();
 
   // Calculate user stats for the profile hero
   const memberSince = useMemo(() => {
