@@ -35,7 +35,7 @@ import JobSelector from '../../components/common/JobSelector';
 import VoiceInputButton from '../../components/common/VoiceInputButton';
 import ImportEarningsScreen from '../import/ImportEarningsScreen';
 import ScanReceiptScreen from '../import/ScanReceiptScreen';
-import { MilestoneCelebration, MilestoneType } from '../../components/gamification';
+import { MilestoneType } from '../../components/gamification';
 
 interface AddTipScreenV2Props {
   onClose?: () => void;
@@ -74,14 +74,10 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const [showImportEarnings, setShowImportEarnings] = useState(false);
   const [showScanReceipt, setShowScanReceipt] = useState(false);
 
-  // Milestone celebration state
-  const [showMilestone, setShowMilestone] = useState(false);
-  const [currentMilestone, setCurrentMilestone] = useState<MilestoneType | null>(null);
-
-
   // Tip count tracking
   const incrementTipCount = useAnimationStore((state) => state.incrementTipCount);
   const loadTipCount = useAnimationStore((state) => state.loadTipCount);
+  const setPendingMilestone = useAnimationStore((state) => state.setPendingMilestone);
 
   // Import scan limits
   const canUseImportScan = useUserStore((state) => state.canUseImportScan);
@@ -343,6 +339,7 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
       }
 
       const result = await incrementTipCount();
+      const successMsg = `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`;
 
       // Check for milestone celebration (10, 25, 50, 100, 250, 500, 1000)
       const validMilestones: MilestoneType[] = [10, 25, 50, 100, 250, 500, 1000];
@@ -351,24 +348,25 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
         validMilestones.includes(result.milestone as MilestoneType);
 
       if (isCelebratableMilestone && result.milestone) {
-        setCurrentMilestone(result.milestone as MilestoneType);
-        setShowMilestone(true);
-        // Don't show regular success or navigate - milestone modal handles it
+        // Queue milestone in store - MainTabNavigator will show it AFTER this modal closes.
+        // Showing a Modal inside a Modal crashes iOS, so we never show celebrations here.
+        setPendingMilestone(result.milestone);
+      }
+
+      // ALWAYS close the AddTip modal FIRST to avoid iOS Modal-on-Modal crash.
+      // MilestoneCelebration, CustomAlert (toast), and SmartUpgradeTrigger all use
+      // Modal internally - showing any of them while this Modal is open crashes iOS.
+      if (onClose) {
+        onClose();
       } else {
-        const successMsg = `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`;
+        navigation.navigate('Home' as never);
+      }
 
-        // Close the AddTip modal FIRST to avoid iOS frozen-modal bug
-        // (showing a Modal-based alert while inside a Modal causes touch-blocking on iOS)
-        if (onClose) {
-          onClose();
-        } else {
-          navigation.navigate('Home' as never);
-        }
-
-        // Show success toast AFTER modal closes (toast doesn't use a Modal, so no conflict)
+      // Show success toast after modal is fully dismissed (only if no milestone)
+      if (!isCelebratableMilestone) {
         setTimeout(() => {
           showToast({ type: 'success', message: `Tip Logged! ${successMsg}` });
-        }, 300);
+        }, 400);
       }
     } catch (err: any) {
       errorHaptic();
@@ -422,24 +420,6 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
     const clockInTime = new Date(now.getTime() - (hours * 60 * 60 * 1000));
     setClockIn(clockInTime);
     setClockOut(now);
-  };
-
-  const handleMilestoneContinue = () => {
-    setShowMilestone(false);
-    setCurrentMilestone(null);
-
-    // Navigate after milestone celebration
-    if (onClose) {
-      onClose();
-    } else {
-      navigation.navigate('Home' as never);
-    }
-  };
-
-  const handleMilestoneUpgrade = () => {
-    setShowMilestone(false);
-    setCurrentMilestone(null);
-    navigation.navigate('Premium' as never);
   };
 
   return (
@@ -895,17 +875,6 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
       >
         <ScanReceiptScreen onClose={() => setShowScanReceipt(false)} />
       </Modal>
-
-      {/* Milestone Celebration Modal */}
-      {currentMilestone && (
-        <MilestoneCelebration
-          visible={showMilestone}
-          milestone={currentMilestone}
-          isPremium={isPremium}
-          onContinue={handleMilestoneContinue}
-          onUpgrade={handleMilestoneUpgrade}
-        />
-      )}
 
     </SafeAreaView>
   );

@@ -7,6 +7,8 @@ import { Colors, Shadows } from '../constants/colors';
 import { BlurView } from 'expo-blur';
 import { mediumHaptic } from '../utils/haptics';
 import { useUserStore } from '../store/userStore';
+import { useAnimationStore } from '../store/animationStore';
+import { MilestoneCelebration, MilestoneType } from '../components/gamification';
 import AppTour, { TourStep } from '../components/AppTour';
 
 // Tab param list type for navigation
@@ -201,9 +203,14 @@ function DashboardScreenWrapper(props: any) {
 export default function MainTabNavigator() {
   const hasCompletedTour = useUserStore((state) => state.hasCompletedTour);
   const completeTour = useUserStore((state) => state.completeTour);
+  const isPremium = useUserStore((state) => state.isPremium());
+  const pendingMilestone = useAnimationStore((state) => state.pendingMilestone);
+  const clearPendingMilestone = useAnimationStore((state) => state.clearPendingMilestone);
 
   const [showAddTipModal, setShowAddTipModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showMilestone, setShowMilestone] = useState(false);
+  const [milestoneToShow, setMilestoneToShow] = useState<MilestoneType | null>(null);
 
   // Set global callback for opening Add Tip modal
   useEffect(() => {
@@ -215,6 +222,24 @@ export default function MainTabNavigator() {
       globalOpenAddTip = null;
     };
   }, []);
+
+  // Show pending milestone celebration AFTER AddTip modal is fully closed
+  useEffect(() => {
+    if (pendingMilestone && !showAddTipModal) {
+      const validMilestones: MilestoneType[] = [10, 25, 50, 100, 250, 500, 1000];
+      if (validMilestones.includes(pendingMilestone as MilestoneType)) {
+        // Delay to let modal dismiss animation complete
+        const timer = setTimeout(() => {
+          setMilestoneToShow(pendingMilestone as MilestoneType);
+          setShowMilestone(true);
+          clearPendingMilestone();
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
+        clearPendingMilestone();
+      }
+    }
+  }, [pendingMilestone, showAddTipModal, clearPendingMilestone]);
 
   // Show tour for users who haven't seen it yet
   useEffect(() => {
@@ -386,6 +411,26 @@ export default function MainTabNavigator() {
       >
         <AddTipScreen onClose={() => setShowAddTipModal(false)} />
       </Modal>
+
+      {/* Milestone Celebration - shown AFTER AddTip modal is fully closed */}
+      {milestoneToShow && (
+        <MilestoneCelebration
+          visible={showMilestone}
+          milestone={milestoneToShow}
+          isPremium={isPremium}
+          onContinue={() => {
+            setShowMilestone(false);
+            setMilestoneToShow(null);
+          }}
+          onUpgrade={() => {
+            setShowMilestone(false);
+            setMilestoneToShow(null);
+            if (globalTabNavigate) {
+              globalTabNavigate('Profile');
+            }
+          }}
+        />
+      )}
 
       {/* App Tour */}
       <AppTour

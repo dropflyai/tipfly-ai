@@ -15,6 +15,11 @@ interface AnimationState {
   loadTipCount: () => Promise<void>;
   incrementTipCount: () => Promise<{ shouldCelebrate: boolean; milestone: number | null }>;
 
+  // Pending milestone (queued for display after AddTip modal closes)
+  pendingMilestone: number | null;
+  setPendingMilestone: (milestone: number | null) => void;
+  clearPendingMilestone: () => void;
+
   // Goal celebration
   shouldShowGoalCelebration: boolean;
   goalCelebrationData: { title?: string; subtitle?: string } | null;
@@ -83,6 +88,11 @@ export const useAnimationStore = create<AnimationState>((set, get) => ({
 
     return { shouldCelebrate, milestone };
   },
+
+  // Pending milestone
+  pendingMilestone: null,
+  setPendingMilestone: (milestone) => set({ pendingMilestone: milestone }),
+  clearPendingMilestone: () => set({ pendingMilestone: null }),
 
   // Goals
   shouldShowGoalCelebration: false,

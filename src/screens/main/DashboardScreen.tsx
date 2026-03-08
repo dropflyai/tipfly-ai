@@ -205,10 +205,13 @@ export default function DashboardScreenV2() {
         const allEntries = await getTipEntries(100);
         setTotalTipsLogged(allEntries.length);
 
-        // Show upgrade trigger at 10 tips milestone (one-time)
+        // Show upgrade trigger at milestone counts (delay to avoid Modal conflict
+        // with AddTip modal which may still be animating closed)
         if (allEntries.length === 10 || allEntries.length === 25 || allEntries.length === 50) {
-          setUpgradeTriggerType('tip_milestone');
-          setShowUpgradeTrigger(true);
+          setTimeout(() => {
+            setUpgradeTriggerType('tip_milestone');
+            setShowUpgradeTrigger(true);
+          }, 800);
         }
       }
     } catch (error) {
