@@ -11,6 +11,7 @@ import {
   Modal,
   Animated,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -45,7 +46,7 @@ type EntryMode = 'quick' | 'ai';
 
 export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const navigation = useNavigation();
-  const { success, error: showError, confirm, showToast } = useAlert();
+  const { showToast } = useAlert();
   const isPremium = useUserStore((state) => state.isPremium());
 
   const [entryMode, setEntryMode] = useState<EntryMode>('quick');
@@ -168,12 +169,13 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
 
     if (!canUseImportScan()) {
       errorHaptic();
-      confirm(
+      Alert.alert(
         'Monthly Limit Reached',
         `You've used all 3 free import scans this month. Upgrade to Premium for unlimited scans!`,
-        () => navigation.navigate('Premium' as never),
-        'Upgrade',
-        false
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Upgrade', onPress: () => navigation.navigate('Premium' as never) },
+        ]
       );
       return;
     }
@@ -189,12 +191,13 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const handleAIEntryToggle = () => {
     if (!isPremium) {
       errorHaptic();
-      confirm(
+      Alert.alert(
         'Premium Feature',
         'AI Entry is a premium feature. Upgrade to unlock conversational tip entry, smart predictions, and more!',
-        () => navigation.navigate('Premium' as never),
-        'Upgrade',
-        false
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Upgrade', onPress: () => navigation.navigate('Premium' as never) },
+        ]
       );
       return;
     }
@@ -212,7 +215,7 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const handleAIParseWithInput = async (input: string) => {
     if (!input.trim()) {
       errorHaptic();
-      showError('Empty Input', 'Please describe your shift');
+      Alert.alert('Empty Input', 'Please describe your shift');
       return;
     }
 
@@ -223,13 +226,13 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
     if (!rateLimit.allowed) {
       errorHaptic();
       const minutesLeft = Math.ceil(rateLimit.resetIn / 60000);
-      showError('Rate Limit Reached', `Please try again in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`);
+      Alert.alert('Rate Limit Reached', `Please try again in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`);
       return;
     }
 
     if (detectSpamInput(userId, input)) {
       errorHaptic();
-      showError('Suspicious Activity', 'Please avoid submitting the same input repeatedly.');
+      Alert.alert('Suspicious Activity', 'Please avoid submitting the same input repeatedly.');
       return;
     }
 
@@ -257,14 +260,14 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
       }
 
       if (result.needs_clarification && result.clarification_question) {
-        showError('Need More Info', result.clarification_question);
+        Alert.alert('Need More Info', result.clarification_question);
       } else {
         successHaptic();
         setEntryMode('quick');
       }
     } catch (err: any) {
       errorHaptic();
-      showError('Parse Error', 'Failed to parse your entry. Please try again.');
+      Alert.alert('Parse Error', 'Failed to parse your entry. Please try again.');
     } finally {
       setParsing(false);
     }
@@ -273,34 +276,34 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
   const handleSave = async () => {
     if (!clockIn || !clockOut) {
       errorHaptic();
-      showError('Missing Info', 'Please enter clock in and clock out times');
+      Alert.alert('Missing Info', 'Please enter clock in and clock out times');
       return;
     }
 
     if (!tipsEarned) {
       errorHaptic();
-      showError('Missing Info', 'Please enter tips earned');
+      Alert.alert('Missing Info', 'Please enter tips earned');
       return;
     }
 
     const timeDiffMs = clockOut.getTime() - clockIn.getTime();
     if (timeDiffMs <= 0) {
       errorHaptic();
-      showError('Invalid Times', 'Clock out time must be after clock in time');
+      Alert.alert('Invalid Times', 'Clock out time must be after clock in time');
       return;
     }
 
     const hours = timeDiffMs / (1000 * 60 * 60);
     if (!validateHours(hours)) {
       errorHaptic();
-      showError('Invalid Hours', 'Shift length must be between 0 and 24 hours');
+      Alert.alert('Invalid Hours', 'Shift length must be between 0 and 24 hours');
       return;
     }
 
     const tips = parseFloat(tipsEarned);
     if (isNaN(tips) || !validateTipAmount(tips)) {
       errorHaptic();
-      showError('Invalid Tips', 'Tip amount must be between $0 and $100,000');
+      Alert.alert('Invalid Tips', 'Tip amount must be between $0 and $100,000');
       return;
     }
 
@@ -325,51 +328,9 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
     try {
       await createTipEntry(tipEntryData);
       successHaptic();
-
-      // Clear form
-      setClockIn(null);
-      setClockOut(null);
-      setTipsEarned('');
-      setTipOut('');
-      setNotes('');
-      setDate(new Date());
-      if (positions.length > 0) {
-        const defaultPos = positions.find(p => p.is_default);
-        setSelectedPosition(defaultPos || null);
-      }
-
-      const result = await incrementTipCount();
-      const successMsg = `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`;
-
-      // Check for milestone celebration (10, 25, 50, 100, 250, 500, 1000)
-      const validMilestones: MilestoneType[] = [10, 25, 50, 100, 250, 500, 1000];
-      const isCelebratableMilestone = result.shouldCelebrate &&
-        result.milestone &&
-        validMilestones.includes(result.milestone as MilestoneType);
-
-      if (isCelebratableMilestone && result.milestone) {
-        // Queue milestone in store - MainTabNavigator will show it AFTER this modal closes.
-        // Showing a Modal inside a Modal crashes iOS, so we never show celebrations here.
-        setPendingMilestone(result.milestone);
-      }
-
-      // ALWAYS close the AddTip modal FIRST to avoid iOS Modal-on-Modal crash.
-      // MilestoneCelebration, CustomAlert (toast), and SmartUpgradeTrigger all use
-      // Modal internally - showing any of them while this Modal is open crashes iOS.
-      if (onClose) {
-        onClose();
-      } else {
-        navigation.navigate('Home' as never);
-      }
-
-      // Show success toast after modal is fully dismissed (only if no milestone)
-      if (!isCelebratableMilestone) {
-        setTimeout(() => {
-          showToast({ type: 'success', message: `Tip Logged! ${successMsg}` });
-        }, 400);
-      }
     } catch (err: any) {
       errorHaptic();
+      setLoading(false);
       let errorTitle = 'Unable to Save';
       let errorMessage = 'We couldn\'t save your tip entry. Please try again.';
 
@@ -384,9 +345,42 @@ export default function AddTipScreenV2({ onClose }: AddTipScreenV2Props) {
         }
       }
 
-      showError(errorTitle, errorMessage);
-    } finally {
-      setLoading(false);
+      Alert.alert(errorTitle, errorMessage);
+      return;
+    }
+
+    // Tip saved successfully - everything below should not block closing the modal
+    setLoading(false);
+    const successMsg = `${formatCurrency(tips)} logged for ${hours.toFixed(1)} hours (${formatCurrency(tips / hours)}/hr)`;
+
+    // Track milestone (non-critical, don't let errors block modal close)
+    let isCelebratableMilestone = false;
+    try {
+      const result = await incrementTipCount();
+      const validMilestones: MilestoneType[] = [10, 25, 50, 100, 250, 500, 1000];
+      isCelebratableMilestone = !!(result.shouldCelebrate &&
+        result.milestone &&
+        validMilestones.includes(result.milestone as MilestoneType));
+
+      if (isCelebratableMilestone && result.milestone) {
+        setPendingMilestone(result.milestone);
+      }
+    } catch (e) {
+      console.warn('Milestone tracking failed:', e);
+    }
+
+    // ALWAYS close the modal - this is the critical step
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.navigate('Home' as never);
+    }
+
+    // Show success toast after modal dismisses (only if no milestone pending)
+    if (!isCelebratableMilestone) {
+      setTimeout(() => {
+        showToast({ type: 'success', message: `Tip Logged! ${successMsg}` });
+      }, 400);
     }
   };
 
