@@ -15,6 +15,8 @@ import {
   addCustomerInfoUpdateListener,
   PREMIUM_ENTITLEMENT,
 } from '../services/purchases/revenuecat';
+import { supabase } from '../services/api/supabase';
+import { useUserStore } from './userStore';
 
 export type SubscriptionPlan = 'free' | 'monthly' | 'annual';
 
@@ -37,6 +39,34 @@ interface SubscriptionState {
   refreshStatus: () => Promise<void>;
   setError: (error: string | null) => void;
   clearError: () => void;
+}
+
+/**
+ * Sync subscription status to Supabase so userStore.isPremium() stays in sync
+ */
+async function syncSubscriptionToSupabase(isPremium: boolean): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('users')
+      .update({ subscription_tier: isPremium ? 'premium' : 'free' })
+      .eq('id', user.id);
+
+    // Also update userStore so isPremium() returns correctly immediately
+    const currentUser = useUserStore.getState().user;
+    if (currentUser) {
+      useUserStore.getState().setUser({
+        ...currentUser,
+        subscription_tier: isPremium ? 'premium' : 'free',
+      });
+    }
+
+    console.log('[SubscriptionStore] Synced to Supabase:', isPremium ? 'premium' : 'free');
+  } catch (error) {
+    console.error('[SubscriptionStore] Failed to sync to Supabase:', error);
+  }
 }
 
 export const useSubscriptionStore = create<SubscriptionState>()(
@@ -80,6 +110,9 @@ export const useSubscriptionStore = create<SubscriptionState>()(
                 ? new Date(entitlement.expirationDate)
                 : null,
             });
+
+            // Sync to Supabase so userStore.isPremium() works everywhere
+            syncSubscriptionToSupabase(isPremium);
           });
 
           // Check initial status
@@ -191,6 +224,9 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             subscriptionPlan: isPremium ? plan : 'free',
             expirationDate,
           });
+
+          // Sync to Supabase so userStore.isPremium() works everywhere
+          syncSubscriptionToSupabase(isPremium);
         } catch (error: any) {
           console.error('[SubscriptionStore] Refresh status error:', error);
         }

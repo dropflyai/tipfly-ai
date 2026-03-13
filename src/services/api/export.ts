@@ -407,7 +407,7 @@ export const getExportFilename = (
 ): string => {
   const start = startDate.toISOString().split('T')[0];
   const end = endDate.toISOString().split('T')[0];
-  return `tipgenius_${start}_to_${end}.${format}`;
+  return `tipfly_${start}_to_${end}.${format}`;
 };
 
 /**

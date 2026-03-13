@@ -51,7 +51,7 @@ export const AppConfig = {
   CURRENCY_SYMBOL: '$',
 
   // Support
-  SUPPORT_EMAIL: 'support@tipgenius.com',
+  SUPPORT_EMAIL: 'support@tipflyai.app',
 
   // RevenueCat API Keys (get these from RevenueCat dashboard)
   // iOS: App Settings > API Keys > Public app-specific API key (iOS)

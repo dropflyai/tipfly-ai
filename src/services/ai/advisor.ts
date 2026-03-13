@@ -4,10 +4,8 @@
 
 import { sanitizeAIInput } from '../../utils/security';
 import { formatCurrency } from '../../utils/formatting';
+import { supabase } from '../api/supabase';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || '';
-const USE_MOCK_MODE = !ANTHROPIC_API_KEY;
-const API_URL = 'https://api.anthropic.com/v1/messages';
 const ADVISOR_TIMEOUT_MS = 30000;
 
 export interface AdvisorMessage {
@@ -101,14 +99,7 @@ export async function askAdvisor(
     return sanitized.reason || 'I couldn\'t process that message. Could you try rephrasing?';
   }
 
-  if (USE_MOCK_MODE) {
-    return getMockAdvisorResponse(sanitized.safe);
-  }
-
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), ADVISOR_TIMEOUT_MS);
-
     // Build conversation history (last 10 messages for context)
     const recentHistory = history.slice(-10);
     const messages = [
@@ -119,30 +110,18 @@ export async function askAdvisor(
       { role: 'user' as const, content: sanitized.safe },
     ];
 
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250514',
-        max_tokens: 1024,
+    const { data, error } = await supabase.functions.invoke('ai-advisor', {
+      body: {
         system: buildSystemPrompt(context),
         messages,
-      }),
-      signal: controller.signal,
+      },
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+    if (error) {
+      throw new Error(`Edge function error: ${error.message}`);
     }
 
-    const data = await response.json();
-    const content = data.content?.[0];
+    const content = data?.content?.[0];
 
     if (content?.type === 'text') {
       return content.text;
@@ -151,11 +130,6 @@ export async function askAdvisor(
     throw new Error('Unexpected response format');
   } catch (error: any) {
     console.warn('[Advisor] API call failed:', error);
-
-    if (error.name === 'AbortError') {
-      return 'Sorry, that took too long. Could you try asking again?';
-    }
-
     return getMockAdvisorResponse(sanitized.safe);
   }
 }

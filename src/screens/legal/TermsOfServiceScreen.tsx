@@ -83,8 +83,8 @@ export default function TermsOfServiceScreen() {
         <Text style={styles.sectionTitle}>12. Contact Us</Text>
         <Text style={styles.paragraph}>
           For questions about these Terms:{'\n'}
-          Email: support@tipgenius.com{'\n'}
-          Website: https://tipgenius.com/contact
+          Email: support@tipflyai.app{'\n'}
+          Website: https://tipflyai.app/contact
         </Text>
 
         <Text style={styles.footer}>
@@ -92,7 +92,7 @@ export default function TermsOfServiceScreen() {
         </Text>
 
         <Text style={styles.fullVersion}>
-          For the complete Terms of Service, visit: https://tipgenius.com/terms
+          For the complete Terms of Service, visit: https://tipflyai.app/terms
         </Text>
       </ScrollView>
     </View>

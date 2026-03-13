@@ -111,9 +111,9 @@ export default function PrivacyPolicyScreen() {
         <Text style={styles.sectionTitle}>14. Contact Us</Text>
         <Text style={styles.paragraph}>
           For questions about this Privacy Policy:{'\n'}
-          Email: privacy@tipgenius.com{'\n'}
-          Support: support@tipgenius.com{'\n'}
-          Website: https://tipgenius.com/privacy
+          Email: privacy@tipflyai.app{'\n'}
+          Support: support@tipflyai.app{'\n'}
+          Website: https://tipflyai.app/privacy
         </Text>
 
         <Text style={styles.footer}>
@@ -121,7 +121,7 @@ export default function PrivacyPolicyScreen() {
         </Text>
 
         <Text style={styles.fullVersion}>
-          For the complete Privacy Policy, visit: https://tipgenius.com/privacy
+          For the complete Privacy Policy, visit: https://tipflyai.app/privacy
         </Text>
       </ScrollView>
     </View>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { Colors, Shadows } from '../../constants/colors';
 import { useUserStore } from '../../store/userStore';
 import { signOut } from '../../services/api/supabase';
@@ -22,6 +23,7 @@ import { formatCurrency } from '../../utils/formatting';
 export default function SettingsScreenV2() {
   const navigation = useNavigation();
   const { user, isPremium, clearUser, resetTour } = useUserStore();
+  const appVersion = Constants.expoConfig?.version || '1.0.0';
 
   // Calculate user stats for the profile hero
   const memberSince = useMemo(() => {
@@ -114,8 +116,8 @@ export default function SettingsScreenV2() {
   const handleRateApp = () => {
     lightHaptic();
     const storeUrl = Platform.select({
-      ios: 'https://apps.apple.com/app/idXXXXXXXX',
-      android: 'https://play.google.com/store/apps/details?id=com.tipgenius.app',
+      ios: 'https://apps.apple.com/app/id6755552157',
+      android: 'https://play.google.com/store/apps/details?id=com.tipflyai.app',
     });
 
     if (storeUrl) {
@@ -343,10 +345,10 @@ export default function SettingsScreenV2() {
             <MenuItem
               icon="information-circle-outline"
               title="About TipFly AI"
-              value="v1.0.0"
+              value={`v${appVersion}`}
               onPress={() => {
                 lightHaptic();
-                Alert.alert('TipFly AI', 'Track Your Tips, Master Your Money\n\nVersion 1.0.0\nPowered by DropFly');
+                Alert.alert('TipFly AI', `Track Your Tips, Master Your Money\n\nVersion ${appVersion}\nPowered by DropFly`);
               }}
             />
             <MenuItem
